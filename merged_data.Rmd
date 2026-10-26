@@ -1,0 +1,315 @@
+---
+title: "Merged dataset"
+author: "Adriana Gutierrez Yllu"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup5, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r run code, message=FALSE, warning=FALSE, echo=TRUE, results='hide'}
+# CARDIA
+rmarkdown::render("/Users/adriana/Library/CloudStorage/OneDrive-Emory/0 TB_DM/clean files/2026.09.20 - V4/cardia.Rmd")
+
+# NHANES
+rmarkdown::render("/Users/adriana/Library/CloudStorage/OneDrive-Emory/0 TB_DM/clean files/2026.09.20 - V4/nhanes.Rmd")
+
+# SOL
+rmarkdown::render("/Users/adriana/Library/CloudStorage/OneDrive-Emory/0 TB_DM/clean files/2026.09.20 - V4/hchs_sol.Rmd")
+```
+
+## Merging datasets
+```{r merging all, echo=TRUE, warning=FALSE, message=FALSE, , results='hide'}
+# categorical variables
+df_list <- list(
+  df__cardia_00    = df_cardia_00,
+  df__cardia_10    = df_cardia_10,
+  df__cardia_15    = df_cardia_15,
+  df__cardia_20    = df_cardia_20,
+  df__nhanes_1999  = df_nhanes_1999,
+  df__nhanes_2011  = df_nhanes_2011,
+  df__sol_v1       = df_sol_v1,
+  df__sol_v2       = df_sol_v2
+)
+
+char_vars <- c(
+  "id_study", "id", "drug_insu_db", "race", "sex", "edu_adult",
+  "self_db", "drug_pill_db", "tb_treatment",
+  "tb_skin_test_result", "tb_medication_use",
+  "tb_history", "tb_skin_test", "self_lab_dm", "tb_dm"
+)
+
+library(dplyr)
+library(purrr)
+
+df_list <- map(df_list, function(df) {
+  df %>%
+    mutate(across(any_of(char_vars), as.character))
+})
+
+# numeric variables
+numeric_vars <- c("age_told_db", "age_told_tb")
+
+df_list <- map(df_list, function(df) {
+  
+  for (var in numeric_vars) {
+    if (var %in% names(df)) {
+      df[[var]] <- readr::parse_number(
+        as.character(df[[var]]),
+        na = c("Q", "S", "", "NA")
+      )
+    }
+  }
+  
+  df
+})
+
+#checking
+map(df_list, ~ sapply(.[char_vars], class))
+
+list2env(df_list, envir = .GlobalEnv)
+
+# cleaning
+rm(df_list, df_cardia_00, df_cardia_10, df_cardia_15, df_cardia_20, df_nhanes_1999,
+   df_nhanes_2011, df_sol_v1, df_sol_v2)
+
+```
+
+
+```{r clean merged, echo=TRUE, warning=FALSE, results='hide'}
+# Merging CARDIA, NHANES, SOL
+
+library(dplyr)
+
+merged_data <- bind_rows(
+  df__cardia_00,
+  df__cardia_10,
+  df__cardia_15,
+  df__cardia_20,
+  df__nhanes_1999,
+  df__nhanes_2011,
+  df__sol_v1,
+  df__sol_v2
+)
+
+# checking 
+table(merged_data$tb_dm) # n=137 + (updated: Y15 (3) + Y20(2))  => 142
+
+# "Clean" dataset
+merged_data <- merged_data %>%
+  filter(tb_dm == "Yes")          # n=142
+```
+
+
+
+## Preliminary Results
+
+```{r labels merged data, message=FALSE, echo=FALSE, warning=FALSE, results='hide'}
+library(labelled)
+
+# Create a named list of variable labels
+merged_var_labels <- list(
+  age = "Age",                        
+  sex = "Sex",
+  race = "Race",
+  ethnicity = "Ethnicity",
+  edu_adult = "Education Level",
+  self_db = "Self-reported diabetes",
+  age_told_db = "Age told DM",
+  drug_insu_db = "Diabetes Mellitus on insulin",
+  drug_pill_db = "Diabetes Mellitus on Oral med",
+  self_lab_dm = "DM self-reported and by lab def",
+  family_hx_db = "Family history of DM",
+  tb_history = "TB History ever",
+  age_told_tb  = "Age told TB",
+  tb_treatment = "TB treatment ever",
+  tb_skin_test = "TB skin test ever",
+  tb_skin_test_result = "TB skin test POSITIVE ever",
+  tb_medication_use = "TB medication use ever",
+  tb_dm = "TB & DM",
+  fasting_minutes = "Fasting (minutes)",
+  fasting_hours = "Fasting (hours)",
+  fasting_8h = "8h fasting",
+  fasting_12h = "12h fasting",
+  fglu = "Fasting Glucose (mg/dl)",
+  hba1c = "HbA1c (%)",
+  pogtt = "Oral Glucose Tolerance test (OGTT, mg/dl)",
+  insulin = "insulin",
+  creatinine_urine = "Creatinine in urine",
+  total_cholesterol = "Total cholesterol (mg/dL)",
+  ldl = "LDL (mg/dL)",
+  weight = "Weight (kg)",
+  height = "Height (cm)",
+  bmi = "BMI (kg/m2)",
+  waist = "Waist (cm)",
+  hip = "Hip (cm)",
+  blood_pressure_sys = "Systolic blood pressure (mmHg)",
+  blood_pressure_diast = "Diastolic blood pressure (mmHg)"
+)
+
+# Apply labels to both datasets
+var_label(merged_data) <- merged_var_labels
+var_label(merged_data) <- merged_var_labels
+
+```
+
+```{r merged data prelim, message=FALSE, echo=FALSE, warning=FALSE}
+library(gtsummary)
+
+# Select variables to include
+vars_to_summarize <- c(
+  "id_study", "age", "sex", "race", "ethnicity", "edu_adult", "self_db", "age_told_db", "drug_insu_db", "drug_pill_db", "self_lab_dm", "family_hx_db",
+  "tb_history", "age_told_tb", "tb_treatment", "fasting_minutes", "fglu", "hba1c", "total_cholesterol", "ldl", "weight", "height", "bmi",  "waist", "hip", "blood_pressure_sys", "blood_pressure_diast", "tb_dm")
+
+```
+
+```{r table merged, message=FALSE, echo=TRUE, warning=FALSE}
+
+# Create table
+merged_data_table <- merged_data %>%
+  select(all_of(vars_to_summarize)) %>%
+  tbl_summary(
+    type = list(
+  age_told_tb ~ "continuous",
+  all_continuous() ~ "continuous"
+),
+    statistic = list(
+      all_continuous() ~ "{median} ({p25}, {p75})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    missing = "no"
+  ) %>%
+  modify_header(label ~ "**Variable**") %>%
+  bold_labels() %>%        
+  as_gt() %>%
+  gt::tab_header(
+    title = "Summary of merged datasets"
+  )
+
+merged_data_table
+
+```
+
+## UNIQUE PARTICIPANTS 
+```{r clean merged unique, echo=FALSE, warning=FALSE, results='hide'}
+library(dplyr)
+
+merged_data_unique <- bind_rows(
+  df__cardia_20,
+  df__nhanes_1999,
+  df__nhanes_2011,
+  df__sol_v1
+)
+
+# checking 
+table(merged_data_unique$tb_dm) # n=116
+
+# "Clean" dataset
+merged_data_unique <- merged_data_unique %>%
+  filter(tb_dm == "Yes")          # n=116
+
+library(labelled)
+
+# Create a named list of variable labels
+merged_var_labels <- list(
+  age = "Age",                        
+  sex = "Sex",
+  race = "Race",
+  ethnicity = "Ethnicity",
+  edu_adult = "Education Level",
+  self_db = "Self-reported diabetes",
+  age_told_db = "Age told DM",
+  drug_insu_db = "Diabetes Mellitus on insulin",
+  drug_pill_db = "Diabetes Mellitus on Oral med",
+  self_lab_dm = "DM self-reported and by lab def",
+  family_hx_db = "Family history of DM",
+  tb_history = "TB History ever",
+  age_told_tb  = "Age told TB",
+  tb_treatment = "TB treatment ever",
+  tb_skin_test = "TB skin test ever",
+  tb_skin_test_result = "TB skin test POSITIVE ever",
+  tb_medication_use = "TB medication use ever",
+  tb_dm = "TB & DM",
+  fasting_minutes = "Fasting (minutes)",
+  fasting_hours = "Fasting (hours)",
+  fasting_8h = "8h fasting",
+  fasting_12h = "12h fasting",
+  fglu = "Fasting Glucose (mg/dl)",
+  hba1c = "HbA1c (%)",
+  pogtt = "Oral Glucose Tolerance test (OGTT, mg/dl)",
+  insulin = "insulin",
+  creatinine_urine = "Creatinine in urine",
+  total_cholesterol = "Total cholesterol (mg/dL)",
+  ldl = "LDL (mg/dL)",
+  weight = "Weight (lbs)",
+  height = "Height (cm)",
+  bmi = "BMI (kg/m2)",
+  waist = "Waist (cm)",
+  hip = "Hip (cm)",
+  blood_pressure_sys = "Systolic blood pressure (mmHg)",
+  blood_pressure_diast = "Diastolic blood pressure (mmHg)"
+)
+
+# Apply labels to both datasets
+var_label(merged_data_unique) <- merged_var_labels
+
+
+```
+
+```{r table merged unique, message=FALSE, echo=TRUE, warning=FALSE}
+
+# Create table
+merged_data_table_unique <- merged_data_unique %>%
+  select(all_of(vars_to_summarize)) %>%
+  tbl_summary(
+    type = list(
+  age_told_tb ~ "continuous",
+  all_continuous() ~ "continuous"
+),
+    statistic = list(
+      all_continuous() ~ "{median} ({p25}, {p75})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    missing = "no"
+  ) %>%
+  modify_header(label ~ "**Variable**") %>%
+  bold_labels() %>%        
+  as_gt() %>%
+  gt::tab_header(
+    title = "Summary of merged datasets"
+  )
+
+merged_data_table_unique
+
+```
+
+```{r table merged unique study, message=FALSE, echo=TRUE, warning=FALSE}
+
+# Create table
+merged_data_table_unique_study <- merged_data_unique %>%
+  select(all_of(vars_to_summarize)) %>%
+  tbl_summary(
+    by = id_study,  # group by studies
+    type = list(
+  age_told_tb ~ "continuous",
+  all_continuous() ~ "continuous"
+),
+    statistic = list(
+      all_continuous() ~ "{median} ({p25}, {p75})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    missing = "no",
+  ) %>%
+  add_overall() %>%
+  modify_header(label ~ "**Variable**") %>%
+  bold_labels() %>%        
+  as_gt() %>%
+  gt::tab_header(
+    title = "Summary of merged datasets by Study"
+  )
+
+merged_data_table_unique_study
+
+```

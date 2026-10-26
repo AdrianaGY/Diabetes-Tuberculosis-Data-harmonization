@@ -1,0 +1,759 @@
+---
+title: "HCHS/SOL - TB/DM"
+author: "Adriana Gutierrez Yllu"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r set up2 , include=FALSE}
+#install.packages("haven")
+#install.packages("dplyr")
+#install.packages("labelled")
+
+library(haven)
+library(dplyr)
+library(labelled)
+```
+
+## Reading Files: HCHS/SOL V1
+
+```{r importing, echo=TRUE, message=FALSE, warning=FALSE}
+
+#Be sure to replace the file path with the appropriate file path on your own computer. 
+
+# >>>>> VISIT 1 <<<<<<
+
+library(readr)
+
+base_dir <- "/Users/adriana/Library/CloudStorage/OneDrive-Emory/0 Emory/Rollins/thesis/Tesis - Rollins/csv V1 main study"
+
+file_paths <- c(
+  file.path(base_dir, "part_derv_lad1.csv"),
+  file.path(base_dir, "piea_lad1.csv"),
+  file.path(base_dir, "rsea_lad1.csv"),
+  file.path(base_dir, "mhea_lad1.csv"),
+  file.path(base_dir, "muea_lad1.csv"),
+  file.path(base_dir, "laba_lad1.csv"),
+  file.path(base_dir, "anta_lad1.csv"),
+  file.path(base_dir, "sbpa_lad1.csv")
+)
+
+for (i in seq_along(file_paths)) {
+  oname <- paste0("df", i)
+  assign(oname, read_csv(file_paths[i]), envir = .GlobalEnv)
+}
+```
+
+## Cleaning: HCHS/SOL V1
+
+```{r merging-V1, echo=TRUE, message=FALSE, warning=FALSE}
+#merging the data set
+data_sol_v1 <- merge(df1, df2,  by ="PID", all = T) 
+data_sol_v1 <- merge(data_sol_v1, df3,  by ="PID", all = T)
+data_sol_v1 <- merge(data_sol_v1, df4,  by ="PID", all = T)
+data_sol_v1 <- merge(data_sol_v1, df5,  by ="PID", all = T)
+data_sol_v1 <- merge(data_sol_v1, df6,  by ="PID", all = T)
+data_sol_v1 <- merge(data_sol_v1, df7,  by ="PID", all = T)
+data_sol_v1 <- merge(data_sol_v1, df8,  by ="PID", all = T)
+
+# cleaning
+rm(df1, df2, df3, df4, df5,
+   df6, df7, df8, file_paths, i, oname)
+
+attach(data_sol_v1)
+
+#creating new data frame which only has the variables of interest
+df_sol_v1 <- data.frame(
+  id_study = 'HCHS_SOL_V1',
+  id       = PID,
+  
+  psu1     = as.numeric(PSU_ID),       # check when merging
+  psu2     = as.numeric(PSU_CNT),
+  
+  stratum1 = as.numeric(STRAT),
+  stratum2 = as.numeric(STRAT_CNT),
+
+  psu_weight1 = as.numeric(WEIGHT_FINAL_NORM_OVERALL),
+  psu_weight2 = as.numeric(WEIGHT_FINAL_EXPANDED),
+  psu_weight3 = as.numeric(WEIGHT_FINAL_NORM_CENTER),
+  
+  # demographics
+  sex     = PIEA1, 
+  age     = as.numeric(AGE),
+  race    = PIEA6,
+  edu_adult = PIEA19A,
+  edu_years  = as.numeric(PIEA17), #years
+  edu_child = NA,
+  ethnicity = NA,
+  
+  #diabetes
+  self_db      = MHEA16, #diabetes ever
+  age_told_db  = as.numeric(MHEA16A),
+  drug_insu_db = MHEA16C,
+  drug_pill_db = MUEA33C, #but only last 4 weeks
+  family_hx_db = NA,
+  
+  #labs
+  fasting_minutes = NA,
+  fasting_hours   = NA,
+  fasting_8h      = NA,
+  fasting_12h     = NA,
+  fglu         = as.numeric(LABA70), units_fglu  = 'mg/dL',
+  hba1c        = as.numeric(LABA72), units_hba1c = 'NA',
+  pogtt          = NA, units_pogtt   = 'NA',
+  insulin      = NA, units_insulin = 'NA',
+  
+  creatinine_urine = as.numeric(LABA76), creatinine_urine_units = 'mg/dL',
+  
+  total_cholesterol        = as.numeric(LABA66), units_cholesterol = NA,
+  ldl                      = as.numeric(LABA69), units_ldl = 'mg/dL',
+
+  #tb
+  tb_history = RSEA50,
+  age_told_tb  = NA,
+  tb_treatment = RSEA51,
+  tb_skin_test = RSEA52, #self-reported
+  tb_skin_test_result = RSEA53, #self-reported
+  tb_medication_use = RSEA54,
+  
+  # Measurements
+  weight                   = as.numeric(ANTA4), units_weight = 'kg',
+  height                   = as.numeric(HEIGHT), units_height = 'cm',
+  bmi                      = as.numeric(BMI), units_bmi = 'KG/M**2',
+  waist                    = as.numeric(ANTA10A), units_waist = 'cm',            # just 1 measure
+  hip                      = as.numeric(ANTA10B), units_waist = 'cm',                                
+  # These will be converted into blood_pressure_sys and blood_pressure_diast later
+  blood_pressure_sys2       = as.numeric(SBPA11), units_sbp = 'mmHg',
+  blood_pressure_sys3       = as.numeric(SBPA14), units_sbp = 'mmHg',
+  blood_pressure_diast2     = as.numeric(SBPA12),
+  blood_pressure_diast3     = as.numeric(SBPA15)
+)
+
+detach(data_sol_v1)
+
+```
+
+## Reading Files: HCHS/SOL V2
+
+```{r importing-V2, echo=TRUE, message=FALSE, warning=FALSE}
+# >>>>> VISIT 2 <<<<<< 
+# without demographic variables -> meaning this is a follow up after ~7 years
+
+library(readr)
+
+#Be sure to replace the file path with the appropriate file path on your own computer. 
+
+base_dir <- "/Users/adriana/Library/CloudStorage/OneDrive-Emory/0 Emory/Rollins/thesis/Tesis - Rollins/csv V2 main study"
+
+file_paths <- c(
+  file.path(base_dir, "mhe_v2_lad1.csv"),
+  file.path(base_dir, "mue_v2_lad1.csv"),
+  file.path(base_dir, "hce_v2_lad1.csv"),
+  file.path(base_dir, "lab_derv_v2_lad1.csv"),
+  file.path(base_dir, "ant_v2_lad1.csv"),
+  file.path(base_dir, "part_derv_v2_lad1.csv"),
+  file.path(base_dir, "sbp_v2_lad1.csv")
+)
+
+for (i in seq_along(file_paths)) {
+  oname <- paste0("dfv2_", i)
+  assign(oname, read_csv(file_paths[i]), envir = .GlobalEnv)
+}
+```
+
+## Cleaning: HCHS/SOL V2
+
+```{r merging-V2, echo=TRUE, message=FALSE, warning=FALSE}
+#merging the data set
+data_sol_v2 <- merge(dfv2_1, dfv2_2,  by ="PID", all = T) 
+data_sol_v2 <- merge(data_sol_v2, dfv2_3,  by ="PID", all = T)
+data_sol_v2 <- merge(data_sol_v2, dfv2_4,  by ="PID", all = T)
+data_sol_v2 <- merge(data_sol_v2, dfv2_5,  by ="PID", all = T)
+data_sol_v2 <- merge(data_sol_v2, dfv2_6,  by ="PID", all = T)
+data_sol_v2 <- merge(data_sol_v2, dfv2_7,  by ="PID", all = T)
+
+# cleaning
+rm(dfv2_1, dfv2_2, dfv2_3, dfv2_4, dfv2_5, dfv2_6, dfv2_7, file_paths, i, oname)
+
+attach(data_sol_v2)
+
+#creating new data frame which only has the variables of interest
+df_sol_v2 <- data.frame(
+  id_study = rep("HCHS_SOL_V2", length(PID)),
+  id       = PID,
+  
+  psu1     = NA,       # check when merging
+  psu2     = NA,
+  
+  stratum1 = NA,
+  stratum2 = NA,
+
+  psu_weight1 = NA,
+  psu_weight2 = NA,
+  psu_weight3 = NA,
+  
+  # demographics
+  sex     = NA, 
+  age     = NA,
+  race    = NA,
+  edu_adult = NA, #level of education
+  edu_years = NA,
+  edu_child = NA,
+  ethnicity = NA,
+  
+  #diabetes
+  self_db      = NA, #diabetes ever
+  age_told_db  = NA,
+  drug_insu_db = NA,
+  drug_pill_db = NA, #but only last 4 weeks
+  family_hx_db = NA,
+  
+  #labs
+  fasting_minutes = NA,
+  fasting_hours   = NA,
+  fasting_8h      = NA,
+  fasting_12h     = NA,
+  fglu         = as.numeric(LABA70), units_fglu  = 'mg/dL',
+  hba1c        = as.numeric(LABA72), units_hba1c = '%',
+  pogtt        = as.numeric(LABA71), units_pogtt  = 'NA',
+  insulin      = as.numeric(LABA96), units_insulin = 'uU/mL',
+  
+  creatinine_urine = as.numeric(LABA76), creatinine_urine_units = 'mg/dL',
+  
+  total_cholesterol        = as.numeric(LABA66), units_cholesterol = 'mg/dL',
+  ldl                      = as.numeric(LABA69), units_ldl = 'mg/dL',  
+  
+  #tb - asked "since V1.."
+  tb_history = MHE35,
+  age_told_tb  = NA,
+  tb_treatment = MHE35A,
+  tb_skin_test = MHE36, #self-reported
+  tb_skin_test_result = MHE36A, #self-reported
+  tb_medication_use = MHE36B,
+  
+  # Measurements
+  weight                   = as.numeric(ANT4), units_weight = 'kg',
+  height                   = as.numeric(ANT2), units_height = 'cm',
+  bmi                      = as.numeric(BMI_V2), units_bmi = 'KG/M**2',
+  waist                    = as.numeric(ANT10A), units_waist = 'cm',    # just 1 measure
+  hip                      = as.numeric(ANT10B), units_waist = 'cm',                                
+  # These will be converted into blood_pressure_sys and blood_pressure_diast later
+  blood_pressure_sys2       = as.numeric(SBP11), units_sbp = 'mmHg',
+  blood_pressure_sys3       = as.numeric(SBP14), units_sbp = 'mmHg',
+  blood_pressure_diast2     = as.numeric(SBP12),
+  blood_pressure_diast3     = as.numeric(SBP15)
+)
+
+detach(data_sol_v2)
+
+```
+
+# Re-coding V1 and V2 datasets
+```{r sol recode, echo=TRUE, warning=FALSE, message=FALSE}
+recode_sol <- function(df) {
+  df %>%
+    mutate(
+
+      # sex
+      sex = case_when(
+        sex == 1 ~ 1,  # men
+        sex == 2 ~ 2,  # women
+        TRUE ~ NA_real_
+      ),
+
+      # yes/no variables
+      across(
+        c(self_db, drug_insu_db, drug_pill_db,
+          tb_history, tb_treatment, tb_skin_test),
+        ~ case_when(
+          . == 1 ~ 1,
+          . == 0 ~ 0,
+          . %in% c(2, 9) ~ 9,
+          TRUE ~ NA_real_
+        )
+      ),
+
+      # TB skin test result
+      tb_skin_test_result = case_when(
+        tb_skin_test_result == 2 ~ 0,                 # negative
+        tb_skin_test_result == 1 ~ 1,                 # positive
+        tb_skin_test_result %in% c("Q", 9) ~ 9,       # DK
+        tb_skin_test_result == "S" ~ NA_real_,
+        TRUE ~ NA_real_
+      ),
+
+      # TB medication use after positive test
+      tb_medication_use = case_when(
+        tb_medication_use == 0 ~ 0,
+        tb_medication_use == 1 ~ 1,
+        tb_medication_use == 9 ~ 9,
+        tb_medication_use == "S" ~ NA_real_,
+        TRUE ~ NA_real_
+      ),
+
+      # race (among hispanics)
+      race = case_when(
+        race %in% c(1, 2, 3, 4, 5, 6) ~ 2,  # hispanic
+        race %in% c("Q", 9) ~ 9,            # DK
+        TRUE ~ NA_real_                     # missing
+      ),
+      
+      # ethnicity (all Hispanics)
+      ethnicity = case_when(
+        TRUE ~ 2                 # Hispanics
+      ),
+
+      # education
+      edu_adult = case_when(
+        edu_adult %in% c(1, 2) ~ 1,    # < HS
+        edu_adult == 3 ~ 2,            # HS
+        edu_adult %in% c(4, 5) ~ 3,    # some college+
+        edu_adult %in% c(6, "Q") ~ 9,  # refused / DK
+        edu_adult == "S" ~ 9,
+        TRUE ~ 9
+      )
+      )
+  }
+
+# Recode datasets (SOL V1, V2)
+df_sol_v1 <- recode_sol(df_sol_v1)
+df_sol_v2 <- recode_sol(df_sol_v2)
+
+
+```
+
+# Diabetes definitions
+
+```{r data transf, echo=TRUE, warning=FALSE, message=FALSE}
+# Diabetes: Self reported / labs (fasting glucose, HbA1c, oral glucose tolerance test)
+create_self_lab_dm <- function(dm) {
+  dm %>%
+    mutate(
+      self_lab_dm = case_when(
+        self_db == 1 | fglu >= 126 | hba1c >= 6.5 | pogtt >= 200 ~ 1,
+        !is.na(self_db) | !is.na(fglu) | !is.na(hba1c) | !is.na(pogtt) ~ 0,
+        is.na(self_db) & is.na(fglu) & is.na(hba1c) & is.na(pogtt) ~ NA_real_
+      )
+    )
+}
+
+df_sol_v1 <- create_self_lab_dm(df_sol_v1)
+df_sol_v2 <- create_self_lab_dm(df_sol_v2)
+
+```
+
+# Generating same SBP and DBP as other datasets
+```{r blood pressure, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+
+# Average of blood pressure measurement (systolic and diastolic #2 + #3 / 2)
+process_bp <- function(df) {
+  df$blood_pressure_sys   <- (df$blood_pressure_sys2 + df$blood_pressure_sys3) / 2
+  df$blood_pressure_diast <- (df$blood_pressure_diast2 + df$blood_pressure_diast3) / 2
+  
+  df <- subset(df, select = -c(blood_pressure_sys2,
+                               blood_pressure_sys3,
+                               blood_pressure_diast2,
+                               blood_pressure_diast3))
+  return(df)
+}
+
+df_sol_v1 <- process_bp(df_sol_v1)
+df_sol_v2 <- process_bp(df_sol_v2)
+
+# Summary of numeric variables - 1999
+summary(df_sol_v1$blood_pressure_sys)
+summary(df_sol_v1$blood_pressure_diast)
+
+library(dplyr)
+
+df_sol_v1 <- df_sol_v1 %>%
+  mutate(
+    blood_pressure_sys = ifelse(
+      blood_pressure_sys >= 70 & blood_pressure_sys <= 270,
+      blood_pressure_sys, NA
+    ),
+    blood_pressure_diast = ifelse(
+      blood_pressure_diast >= 30 & blood_pressure_diast <= 150,
+      blood_pressure_diast, NA
+    )
+  )
+
+
+# Summary of numeric variables - df_sol_v2
+
+summary(df_sol_v2$blood_pressure_sys)
+summary(df_sol_v2$blood_pressure_diast)
+
+
+df_sol_v2 <- df_sol_v2 %>%
+  mutate(
+    blood_pressure_sys = ifelse(
+      blood_pressure_sys >= 70 & blood_pressure_sys <= 270,
+      blood_pressure_sys, NA
+    ),
+    blood_pressure_diast = ifelse(
+      blood_pressure_diast >= 30 & blood_pressure_diast <= 150,
+      blood_pressure_diast, NA
+    )
+  )
+
+
+```
+
+# Numeric variables
+```{r numeric-variables, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+
+# Summary of numeric variables - df_sol_v1
+summary(df_sol_v1$weight)
+summary(df_sol_v1$height)
+summary(df_sol_v1$bmi)
+summary(df_sol_v1$waist)
+summary(df_sol_v1$hip)
+summary(df_sol_v1$ldl)
+summary(df_sol_v1$total_cholesterol)
+
+
+library(dplyr)
+
+df_sol_v1 <- df_sol_v1 %>%
+  mutate(
+    weight = ifelse(weight >= 12 & weight <= 300, weight, NA),              # Plausible range: 12-300 kg => 26.45 - 661.39 lbs
+    height = ifelse(height >= 100 & height <= 250, height, NA),             # Plausible range: 100 - 250 cm
+    bmi = ifelse(bmi >= 10 & bmi <= 80, bmi, NA),                           # Plausible range: 10-80 kg/m2
+    waist = ifelse(waist >= 30 & waist <= 300, waist, NA),                  # Plausible range: 30 - 300 cm
+    hip = ifelse(hip >= 40 & hip <= 300, hip, NA),                          # Plausible range: 40 - 300 cm
+    ldl = ifelse(ldl >= 19.33 & ldl <= 386.65, ldl, NA),                    # Plausible range: 0.5 - 10 mmol/L => 19.33 - 386.65 mg/dl 
+    total_cholesterol = ifelse(
+      total_cholesterol >= 67.66 & total_cholesterol <= 773.31,             # Plausible range: 1.75 - 20 mmol/L => 67.66 - 773.31 mg/dl  
+      total_cholesterol, NA
+    )
+  )
+
+
+# Summary of numeric variables - df_sol_v2
+summary(df_sol_v2$weight)
+summary(df_sol_v2$height)
+summary(df_sol_v2$bmi)
+summary(df_sol_v2$waist)
+summary(df_sol_v2$hip)
+summary(df_sol_v2$ldl)
+summary(df_sol_v2$total_cholesterol)
+
+df_sol_v2 <- df_sol_v2 %>%
+  mutate(
+    weight = ifelse(weight >= 12 & weight <= 300, weight, NA),              # Plausible range: 12-300 kg => 26.45 - 661.39 lbs
+    height = ifelse(height >= 100 & height <= 250, height, NA),             # Plausible range: 100 - 250 cm
+    bmi = ifelse(bmi >= 10 & bmi <= 80, bmi, NA),                           # Plausible range: 10-80 kg/m2
+    waist = ifelse(waist >= 30 & waist <= 300, waist, NA),                  # Plausible range: 30 - 300 cm
+    hip = ifelse(hip >= 40 & hip <= 300, hip, NA),                          # Plausible range: 40 - 300 cm
+    ldl = ifelse(ldl >= 19.33 & ldl <= 386.65, ldl, NA),                    # Plausible range: 0.5 - 10 mmol/L => 19.33 - 386.65 mg/dl 
+    total_cholesterol = ifelse(
+      total_cholesterol >= 67.66 & total_cholesterol <= 773.31,                  # Plausible range: 1.75 - 20 mmol/L => 67.66 - 773.31 mg/dl  
+      total_cholesterol, NA
+    )
+  )
+
+
+
+```
+
+# Labeling both datasets
+
+```{r labeling, echo=TRUE, warning=FALSE, message=FALSE}
+label_sol <- function(label) {
+  label %>%
+    mutate(
+      # Sex
+      sex = factor(sex,
+                   levels = c(1, 2),
+                   labels = c("Men", "Women")),
+
+      # TB variables
+      tb_history = factor(tb_history,
+                          levels = c(1, 0, 9),
+                          labels = c("Yes", "No", "Refused/DK")),
+      tb_treatment = factor(tb_treatment,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      tb_skin_test = factor(tb_skin_test,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      tb_skin_test_result = factor(tb_skin_test_result,
+                                   levels = c(1, 0, 9),
+                                   labels = c("Positive", "Negative", "Refused/DK")),
+      tb_medication_use = factor(tb_medication_use,
+                                 levels = c(1, 0, 9),
+                                 labels = c("Yes", "No", "Refused/DK")),
+
+      # Diabetes self-report + labs
+      self_db = factor(self_db,
+                       levels = c(1, 0, 9),
+                       labels = c("Yes", "No", "Refused/DK")),
+      drug_insu_db = factor(drug_insu_db,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      drug_pill_db = factor(drug_pill_db,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      self_lab_dm = factor(self_lab_dm,
+                           levels = c(1, 0),
+                           labels = c("Diabetes", "No Diabetes")),
+
+      # Family history
+      family_hx_db = factor(family_hx_db,
+                            levels = c(1, 0),
+                            labels = c("Yes", "No")),
+
+      # Race/Ethnicity
+      race = factor(race,
+                    levels = c(0, 1, 2, 3, 9),
+                    labels = c("Non-Hispanic Black", 
+                               "Non-Hispanic White", 
+                               "Mexican/Other Hispanic", 
+                               "Other/Multiracial", 
+                               "Missing")),
+      ethnicity = factor(ethnicity,
+                         levels = c(1, 2, 9),
+                         labels = c("Non-Hispanic", "Hispanic", "Missing")),
+
+      # Education
+      edu_adult = factor(edu_adult,
+                         levels = c(1, 2, 3, 4, 9),
+                         labels = c("< High School", 
+                                    "High School Grad", 
+                                    "Some College/AA", 
+                                    "College+", 
+                                    "Refused/DK"))
+    )
+}
+
+df_sol_v1 <- label_sol(df_sol_v1)
+df_sol_v2 <- label_sol(df_sol_v2)
+
+
+```
+
+# Exploratory data analysis
+
+```{r exploratory data analysis, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+###==== V1 - Baseline visit =======
+#TB (n=423)
+table(df_sol_v1$tb_history)
+
+#DM 
+table(df_sol_v1$self_db)        # (n=1885)
+table(df_sol_v1$self_lab_dm)    # (n=2386)
+
+#DM and TB 
+table(df_sol_v1$tb_history, df_sol_v1$self_db)      # (n=72)
+table(df_sol_v1$tb_history, df_sol_v1$self_lab_dm)  # (n=89)
+
+###==== Visit V2 =======
+#TB (n=65)
+table(df_sol_v2$tb_history)
+
+#DM 
+table(df_sol_v2$self_db) # (n=0) no self report data, didn't ask the question
+table(df_sol_v2$tb_history, df_sol_v2$self_lab_dm)  # (n=17) new db diagnosis since last visit
+
+
+#DM and TB 
+table(df_sol_v2$tb_history, df_sol_v2$self_db)      # (n=0)
+table(df_sol_v2$tb_history, df_sol_v2$self_lab_dm)  # (n=17) 
+
+```
+
+
+# New DM and TB variable
+
+```{r dm_tb, , echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+# For CARDIA Y00
+df_sol_v1 <- df_sol_v1 %>%
+  mutate(
+    tb_dm = case_when(
+      self_lab_dm == "Diabetes" & tb_history == "Yes" ~ 1,  # both DM and TB
+      TRUE ~ 0                                               # everything else
+    )
+  )
+
+# For CARDIA Y10
+df_sol_v2 <- df_sol_v2 %>%
+  mutate(
+    tb_dm = case_when(
+      self_lab_dm == "Diabetes" & tb_history == "Yes" ~ 1,
+      TRUE ~ 0
+    )
+  )
+
+# Labeling both dataset
+label_tb_dm <- function(tb_dm) {
+  tb_dm %>%
+    mutate(
+      # diabetes & tuberculosis
+      tb_dm = factor(tb_dm,
+                   levels = c(0, 1),
+                   labels = c("No", "Yes"))
+    )
+}
+
+df_sol_v1 <- label_tb_dm(df_sol_v1)
+df_sol_v2 <- label_tb_dm(df_sol_v2)
+
+
+#Checking
+table(df_sol_v1$tb_dm)
+table(df_sol_v2$tb_dm)
+
+
+
+```
+# Preliminary results: 
+
+## SOL V1
+
+```{r, labeling-variables-data, echo=FALSE, include=FALSE}
+library(labelled)
+
+# Create a named list of variable labels
+sol_var_labels <- list(
+  age = "Age",                        
+  sex = "Sex",
+  race = "Race",
+  ethnicity = "Ethnicity",
+  edu_adult = "Education Level",
+  self_db = "Self-reported diabetes",
+  age_told_db = "Age told DM",
+  drug_insu_db = "Diabetes Mellitus on insulin",
+  drug_pill_db = "Diabetes Mellitus on Oral med",
+  self_lab_dm = "DM self-reported and by lab def",
+  family_hx_db = "Family history of DM",
+  tb_history = "TB History ever",
+  age_told_tb  = "Age told TB",
+  tb_treatment = "TB treatment ever",
+  tb_skin_test = "TB skin test ever",
+  tb_skin_test_result = "TB skin test POSITIVE ever",
+  tb_medication_use = "TB medication use ever",
+  tb_dm = "TB & DM",
+  fasting_minutes = "Fasting (minutes)",
+  fasting_hours = "Fasting (hours)",
+  fasting_8h = "8h fasting",
+  fasting_12h = "12h fasting",
+  fglu = "Fasting Glucose (mg/dl)",
+  hba1c = "HbA1c (%)",
+  pogtt = "Oral Glucose Tolerance test (OGTT, mg/dl)",
+  insulin = "insulin",
+  creatinine_urine = "Creatinine in urine",
+  total_cholesterol = "Total cholesterol (mg/dL)",
+  ldl = "LDL (mg/dL)",
+  weight = "Weight (lbs)",
+  height = "Height (cm)",
+  bmi = "BMI (kg/m2)",
+  waist = "Waist (cm)",
+  hip = "Hip (cm)",
+  blood_pressure_sys = "Systolic blood pressure (mmHg)",
+  blood_pressure_diast = "Diastolic blood pressure (mmHg)"
+)
+
+# Apply labels to both dataset
+var_label(df_sol_v1) <- sol_var_labels
+var_label(df_sol_v2) <- sol_var_labels
+
+
+```
+
+
+```{r, CARDIA TABLE (Y10), message=FALSE, echo=TRUE}
+library(gtsummary)
+
+# Select the variables you want to include
+vars_to_summarize <- c(
+  "age", "sex", "race", "edu_adult", "self_db", "age_told_db", "drug_insu_db", "drug_pill_db",
+  "self_lab_dm", "family_hx_db",
+  "tb_history", "age_told_tb", "tb_treatment", "fasting_minutes", "fglu", "hba1c", "total_cholesterol", "ldl", "weight", "height", "bmi",  "waist", "hip", "blood_pressure_sys", "blood_pressure_diast", "tb_dm")
+
+# Create table1
+SOL_V1_table <- df_sol_v1 %>%
+  select(all_of(vars_to_summarize), tb_dm) %>%  # include the grouping variable
+  tbl_summary(
+    by = tb_dm,  # group by TB+DM
+    type = list(
+      age ~ "continuous",
+      age_told_db ~ "continuous",
+      age_told_tb ~ "continuous",
+      fglu ~ "continuous",
+      hba1c ~ "continuous",
+      fasting_minutes ~ "continuous",
+      total_cholesterol ~ "continuous",
+      ldl ~ "continuous",
+      weight ~ "continuous",
+      height ~ "continuous",
+      bmi ~ "continuous",
+      waist ~ "continuous",
+      hip ~ "continuous",
+      blood_pressure_sys ~ "continuous",
+      blood_pressure_diast ~ "continuous"
+    ),
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    label = var_label(df_sol_v1),
+    missing = "no"
+  ) 
+
+SOL_V1_table <- SOL_V1_table %>%
+  modify_header(label ~ "**Variables**") %>%
+  modify_spanning_header(c(stat_1, stat_2) ~ "**Summary Statistics (SOL V1)**")
+
+SOL_V1_table
+
+```
+
+
+# Preliminary results: 
+
+## SOL V2
+
+```{r SOL TABLE (V2), warning=FALSE, message=FALSE, echo=TRUE}
+library(gtsummary)
+
+SOL_V2_table <- df_sol_v2 %>%
+  select(all_of(vars_to_summarize), tb_dm) %>%  # include the grouping variable
+  tbl_summary(
+    by = tb_dm,  # group by TB+DM
+    type = list(
+      age ~ "continuous",
+      age_told_db ~ "continuous",
+      age_told_tb ~ "continuous",
+      fglu ~ "continuous",
+      hba1c ~ "continuous",
+      fasting_minutes ~ "continuous",
+      total_cholesterol ~ "continuous",
+      ldl ~ "continuous",
+      weight ~ "continuous",
+      height ~ "continuous",
+      bmi ~ "continuous",
+      waist ~ "continuous",
+      hip ~ "continuous",
+      blood_pressure_sys ~ "continuous",
+      blood_pressure_diast ~ "continuous"
+    ),
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    label = var_label(df_sol_v2),
+    missing = "no"
+  ) 
+
+SOL_V2_table <- SOL_V2_table %>%
+  modify_header(label ~ "**Variables**") %>%
+  modify_spanning_header(c(stat_1, stat_2) ~ "**Summary Statistics (SOL V2)**")
+
+SOL_V2_table
+
+```

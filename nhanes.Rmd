@@ -1,0 +1,865 @@
+---
+title: "NHANES 1999 & 2011"
+author: "Adriana Gutierrez Yllu"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+```
+
+```{r set up , include=FALSE}
+#install.packages("haven")
+#install.packages("dplyr")
+#install.packages("labelled")
+
+library(haven)
+library(dplyr)
+library(labelled)
+```
+
+## Reading Files: NHANES 1999
+
+```{r, ECHO=FALSE, message=FALSE, warning=FALSE}
+library(haven)
+
+#Be sure to replace the file path with the appropriate file path on your own computer. 
+
+setwd("/Users/adriana/Library/CloudStorage/OneDrive-Emory/0 TB_DM/NHANES/NHANES 1999-2000")
+
+#reading the datasets and putting them into one file
+file00 <- c("DEMO.XPT",
+            "TBQ.xpt", 
+            "DIQ.XPT", 
+            "LAB10AM.xpt", 
+            "LAB10.xpt", 
+            "LAB16.xpt", 
+            "TB.xpt",
+            "LAB13.XPT",
+            "LAB13AM.XPT",
+            "PH.XPT",
+            "BPX.XPT",
+            "BMX.XPT"
+            )
+
+#assgning a name for each dataset
+for(i in 1:length(file00)) {
+  oname = paste0("df", i)
+  assign(oname, read_xpt(file00[i]))
+}
+
+#merging the data set
+data_nhanes_1999 <- merge(df1, df2,  by ="SEQN", all = T) 
+data_nhanes_1999 <- merge(data_nhanes_1999, df3,  by ="SEQN", all = T)
+data_nhanes_1999 <- merge(data_nhanes_1999, df4,  by ="SEQN", all = T)
+data_nhanes_1999 <- merge(data_nhanes_1999, df5,  by ="SEQN", all = T)
+data_nhanes_1999 <- merge(data_nhanes_1999, df6,  by ="SEQN", all = T)
+data_nhanes_1999 <- merge(data_nhanes_1999, df7,  by ="SEQN", all = T)
+data_nhanes_1999 <- merge(data_nhanes_1999, df8,  by ="SEQN", all = T)
+data_nhanes_1999 <- merge(data_nhanes_1999, df9,  by ="SEQN", all = T)
+data_nhanes_1999 <- merge(data_nhanes_1999, df10,  by ="SEQN", all = T)
+data_nhanes_1999 <- merge(data_nhanes_1999, df11,  by ="SEQN", all = T)
+data_nhanes_1999 <- merge(data_nhanes_1999, df12,  by ="SEQN", all = T)
+
+
+# cleaning
+rm(df1, df2, df3, df4, df5,
+   df6, df7, df8, df9, df10, df11, df12, file00, i, oname)
+```
+
+## Cleaning: NHANES 1999
+
+```{r, ECHO=FALSE, message=FALSE, warning=FALSE}
+
+attach(data_nhanes_1999)
+
+#creating new data frame which only has the variables of interest
+df_nhanes_1999 <- data.frame(
+  id_study = 'NHANES_1999_2000',
+  id       = SEQN,
+  
+  psu1     = as.numeric(SDMVPSU),
+  psu2     = NA,
+  
+  stratum1 = as.numeric(SDMVSTRA),
+  stratum2 = NA,
+
+  psu_weight1 = NA,
+  psu_weight2 = NA,
+  psu_weight3 = NA,
+  
+  # demographics
+  sex     = DMDHRGND, #RIAGENDR
+  age     = as.numeric(RIDAGEYR),
+  race    = RIDRETH1,
+  edu_adult = DMDEDUC2,
+  edu_years = NA,
+  edu_child = DMDEDUC3,
+  ethnicity = RIDRETH2,
+  
+  #diabetes
+  self_db      = DIQ010,
+  age_told_db  = DIQ040Q,
+  drug_insu_db = DIQ050,
+  drug_pill_db = DIQ070,
+  family_hx_db = NA,
+  
+  #labs
+  fasting_minutes = as.numeric(PHAFSTMN),
+  fasting_hours   = as.numeric(PHAFSTHR),
+  fasting_8h      = NA,
+  fasting_12h     = NA,
+  fglu         = as.numeric(LBXGLU), units_fglu  = 'mg/dL',
+  hba1c        = as.numeric(LBXGH), units_hba1c = '%',
+  pogtt          = NA, units_pogtt   = NA,
+  insulin      = as.numeric(LBXIN), units_insulin = 'uU/mL',
+  
+  creatinine_urine = as.numeric(URXUCR), creatinine_urine_units = 'mg/dL',
+  
+  total_cholesterol        = as.numeric(LBXTC), units_cholesterol = 'mg/dL',
+  ldl                      = as.numeric(LBDLDL), units_ldl = 'mg/dL',
+  
+  #tb
+  tb_history = TBQ040,
+  age_told_tb  = NA,
+  tb_treatment = TBQ050,
+  tb_skin_test = TBQ010,
+  tb_skin_test_result = TBQ020,
+  tb_medication_use = TBQ030,
+  
+  # Measurements
+  weight                   = as.numeric(BMXWT), units_weight = 'kg',
+  height                   = as.numeric(BMXHT), units_height = 'cm',
+  bmi                      = as.numeric(BMXBMI), units_bmi = 'KG/M**2',
+  waist                    = as.numeric(BMXWAIST), units_waist = 'cm',            # just 1 measure
+  hip                      = NA, units_hip = NA,                                 
+  # These will be converted into blood_pressure_sys and blood_pressure_diast later
+  blood_pressure_sys2       = as.numeric(BPXSY2), units_sbp = 'mmHg',
+  blood_pressure_sys3       = as.numeric(BPXSY3), units_sbp = 'mmHg',
+  blood_pressure_diast2     = as.numeric(BPXDI2),
+  blood_pressure_diast3     = as.numeric(BPXDI3)
+)
+
+detach(data_nhanes_1999)
+```
+
+## Reading Files: NHANES 2011
+
+```{r, ECHO=FALSE, message=FALSE, warning=FALSE}
+library(haven)
+
+# Be sure to replace the file path with the appropriate file path on your own computer. 
+
+setwd("/Users/adriana/Library/CloudStorage/OneDrive-Emory/0 TB_DM/NHANES/NHANES 2011-2012")
+
+#reading the datasets and putting them into one file
+file_list <- c("DEMO_G.xpt",
+               "TBQ_G.xpt",
+               "DIQ_G.xpt",
+               "GLU_G.xpt",
+               "GHB_G.xpt",
+               "ALB_CR_G.xpt",
+               "TB_G.xpt",
+               "FASTQX_G.XPT",
+               "TCHOL_G.XPT",
+               "TRIGLY_G.XPT",
+               "BMX_G.XPT",
+               "BPX_G.XPT"
+               )
+
+#assgning a name for each dataset
+for(i in 1:length(file_list)) {
+  oname = paste0("df", i)
+  assign(oname, read_xpt(file_list[i]))
+}
+
+#merging the data set
+data_nhanes_2011 <- merge(df1, df2,  by ="SEQN", all = T) 
+data_nhanes_2011 <- merge(data_nhanes_2011, df3,  by ="SEQN", all = T)
+data_nhanes_2011 <- merge(data_nhanes_2011, df4,  by ="SEQN", all = T)
+data_nhanes_2011 <- merge(data_nhanes_2011, df5,  by ="SEQN", all = T)
+data_nhanes_2011 <- merge(data_nhanes_2011, df6,  by ="SEQN", all = T)
+data_nhanes_2011 <- merge(data_nhanes_2011, df7,  by ="SEQN", all = T)
+data_nhanes_2011 <- merge(data_nhanes_2011, df8,  by ="SEQN", all = T)
+data_nhanes_2011 <- merge(data_nhanes_2011, df9,  by ="SEQN", all = T)
+data_nhanes_2011 <- merge(data_nhanes_2011, df10,  by ="SEQN", all = T)
+data_nhanes_2011 <- merge(data_nhanes_2011, df11,  by ="SEQN", all = T)
+data_nhanes_2011 <- merge(data_nhanes_2011, df12,  by ="SEQN", all = T)
+
+# cleaning
+rm(df1, df2, df3, df4, df5,
+   df6, df7, df8, df9, df10, df11, df12, file_list, i, oname)
+
+```
+
+
+## Cleaning NHANES 2011
+
+```{r, ECHO=FALSE, message=FALSE, warning=FALSE}
+# cleaning
+
+attach(data_nhanes_2011)
+
+#creating new data frame which only has the variables of interest
+df_nhanes_2011 <- data.frame(
+  id_study = 'NHANES_2011_2012',
+  id       = SEQN,
+  
+  psu1     = as.numeric(SDMVPSU),
+  psu2     = NA,
+  
+  stratum1 = as.numeric(SDMVSTRA),
+  stratum2 = NA,
+
+  psu_weight1 = NA,
+  psu_weight2 = NA,
+  psu_weight3 = NA,
+  
+  # demographics
+  sex     = RIAGENDR,
+  age     = as.numeric(RIDAGEYR),
+  race    = RIDRETH1,
+  edu_adult = DMDEDUC2,
+  edu_years = NA,
+  edu_child = DMDEDUC3,
+  ethnicity = RIDRETH3,
+  
+  #diabetes
+  self_db      = DIQ010,
+  age_told_db  = NA, #object 'DIQ040Q' not found
+  drug_insu_db = DIQ050,
+  drug_pill_db = DIQ070,
+  family_hx_db = DIQ175A,
+  
+  #labs
+  fasting_minutes = as.numeric(PHAFSTMN.y),
+  fasting_hours   = as.numeric(PHAFSTHR.y),
+  fasting_8h      = NA,
+  fasting_12h     = NA,
+  fglu         = as.numeric(LBXGLU), units_fglu  = 'mg/dL',
+  hba1c        = as.numeric(LBXGH), units_hba1c = '%',
+  pogtt          = NA, units_pogtt   = 'NA',
+  insulin      = as.numeric(LBXIN), units_insulin = 'uU/mL',
+  
+  creatinine_urine = as.numeric(URXUCR), creatinine_urine_units = 'mg/dL',
+  
+  total_cholesterol        = as.numeric(LBXTC), units_cholesterol = 'mg/dL',
+  ldl                      = as.numeric(LBDLDL), units_ldl = 'mg/dL',
+  
+  #tb
+  tb_history = TBQ040,
+  age_told_tb  = NA,
+  tb_treatment = TBQ050,
+  tb_skin_test = TBQ015A,
+  tb_skin_test_result = TBQ022,
+  tb_medication_use = TBQ030,
+  
+  # Measurements
+  weight                   = as.numeric(BMXWT), units_weight = 'lbs',
+  height                   = as.numeric(BMXHT), units_height = 'cm',
+  bmi                      = as.numeric(BMXBMI), units_bmi = 'KG/M**2',
+  waist                    = as.numeric(BMXWAIST), units_waist = 'cm',
+  hip                      = NA,                  units_hip = 'cm',
+  blood_pressure_sys2      = as.numeric(BPXSY2), units_sbp = 'mmHg',
+  blood_pressure_diast2    = as.numeric(BPXDI2), units_dbp = 'mmHg',
+  blood_pressure_sys3      = as.numeric(BPXSY3),
+  blood_pressure_diast3    = as.numeric(BPXDI3)
+)
+
+detach(data_nhanes_2011)
+```
+
+# Re-coding both datasets
+
+```{r nhanes recode, ECHO=FALSE, message=FALSE, warning=FALSE}
+
+recode_nhanes <- function(df) {
+  df %>%
+    mutate(
+
+      # sex
+      sex = case_when(
+        sex == 1 ~ 1, #men
+        sex == 2 ~ 2, #women
+        TRUE ~ NA_real_
+      ),
+
+      # yes/no variables
+      across(
+        c(self_db, drug_insu_db, drug_pill_db,
+          tb_history, tb_treatment, tb_medication_use,
+          tb_skin_test, tb_skin_test_result),
+        ~ case_when(
+          . == 1 ~ 1,
+          . == 2 ~ 0,
+          . %in% c(7, 9) ~ 9,
+          TRUE ~ NA_real_
+        )
+      ),
+
+      # family history
+      family_hx_db = case_when(
+        family_hx_db == 10 ~ 1,
+        TRUE ~ NA_real_
+      ),
+
+      # race
+      race = case_when(
+        race == 4 ~ 0,
+        race == 3 ~ 1,
+        race %in% c(1, 2) ~ 2,
+        race == 5 ~ 3,
+        race == 8 ~ 9,                # DK
+        TRUE ~ NA_real_
+      ),
+
+      # ethnicity
+      ethnicity = case_when(
+        ethnicity %in% c(1, 2, 4) ~ 1,
+        ethnicity %in% c(3, 5) ~ 2,
+        TRUE ~ NA_real_
+      ),
+
+      # education
+      edu_adult = case_when(
+        edu_adult %in% c(1, 2) ~ 1,
+        edu_adult == 3 ~ 2,
+        edu_adult == 4 ~ 3,
+        edu_adult == 5 ~ 4,
+        edu_adult %in% c(7, 9) ~ 9,
+        TRUE ~ 9
+      )
+
+    )
+}
+
+# Re coding both datasets (1999 and 2011)
+df_nhanes_2011 <- recode_nhanes(df_nhanes_2011)
+df_nhanes_1999 <- recode_nhanes(df_nhanes_1999)
+
+```
+
+# Diabetes definitions
+
+```{r data transf, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Cleaning fasting glucose: 
+df_nhanes_2011 <- df_nhanes_2011 %>%      # NA increased: 6723 -> 6903
+  mutate(
+    fglu = case_when(
+      fasting_hours < 8 ~ NA_real_,
+      TRUE ~ fglu
+    )
+  )
+
+df_nhanes_1999 <- df_nhanes_1999 %>%      # NA increased: 6931 -> 7182
+  mutate(
+    fglu = case_when(
+      fasting_hours < 8 ~ NA_real_,
+      TRUE ~ fglu
+    )
+  )
+
+
+# Cleaning diabetes-lab variables:
+
+library(dplyr)
+
+df_nhanes_2011 <- df_nhanes_2011 %>%
+  mutate(
+    fglu  = ifelse(fglu  >= 36 & fglu  <= 540, fglu,  NA),      # Plausible range: 36 - 540 mg/dl
+    hba1c = ifelse(hba1c >= 3  & hba1c <= 18,  hba1c, NA)       # Plausible range: 3 - 18 %
+  )
+
+df_nhanes_1999 <- df_nhanes_1999 %>%
+  mutate(
+    fglu  = ifelse(fglu  >= 36 & fglu  <= 540, fglu,  NA),      # Plausible range: 36 - 540 mg/dl
+    hba1c = ifelse(hba1c >= 3  & hba1c <= 18,  hba1c, NA)       # Plausible range: 3 - 18 %
+  )
+
+
+
+# Diabetes: Self reported / labs (fasting glucose, HbA1c, oral glucose tolerance test)
+create_self_lab_dm <- function(dm) {
+  dm %>%
+    mutate(
+      self_lab_dm = case_when(
+        self_db == 1 | fglu >= 126 | hba1c >= 6.5 | pogtt >= 200 ~ 1,
+        !is.na(self_db) | !is.na(fglu) | !is.na(hba1c) | !is.na(pogtt) ~ 0,
+        is.na(self_db) & is.na(fglu) & is.na(hba1c) & is.na(pogtt) ~ NA_real_
+      )
+    )
+}
+
+df_nhanes_1999 <- create_self_lab_dm(df_nhanes_1999)
+df_nhanes_2011 <- create_self_lab_dm(df_nhanes_2011)
+
+```
+
+# Generating same SBP and DBP as other datasets
+```{r blood pressure, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+
+# Average of blood pressure measurement (systolic and diastolic #2 + #3 / 2)
+process_bp <- function(df) {
+  df$blood_pressure_sys   <- (df$blood_pressure_sys2 + df$blood_pressure_sys3) / 2
+  df$blood_pressure_diast <- (df$blood_pressure_diast2 + df$blood_pressure_diast3) / 2
+  
+  df <- subset(df, select = -c(blood_pressure_sys2,
+                               blood_pressure_sys3,
+                               blood_pressure_diast2,
+                               blood_pressure_diast3))
+  return(df)
+}
+
+df_nhanes_1999 <- process_bp(df_nhanes_1999)
+df_nhanes_2011 <- process_bp(df_nhanes_2011)
+
+# Summary of numeric variables - 1999
+summary(df_nhanes_1999$blood_pressure_sys)
+summary(df_nhanes_1999$blood_pressure_diast)
+
+library(dplyr)
+
+df_nhanes_1999 <- df_nhanes_1999 %>%
+  mutate(
+    blood_pressure_sys = ifelse(
+      blood_pressure_sys >= 70 & blood_pressure_sys <= 270,
+      blood_pressure_sys, NA
+    ),
+    blood_pressure_diast = ifelse(
+      blood_pressure_diast >= 30 & blood_pressure_diast <= 150,
+      blood_pressure_diast, NA
+    )
+  )
+
+
+# Summary of numeric variables - 2011
+
+summary(df_nhanes_2011$blood_pressure_sys)
+summary(df_nhanes_2011$blood_pressure_diast)
+
+
+df_nhanes_2011 <- df_nhanes_2011 %>%
+  mutate(
+    blood_pressure_sys = ifelse(
+      blood_pressure_sys >= 70 & blood_pressure_sys <= 270,
+      blood_pressure_sys, NA
+    ),
+    blood_pressure_diast = ifelse(
+      blood_pressure_diast >= 30 & blood_pressure_diast <= 150,
+      blood_pressure_diast, NA
+    )
+  )
+
+
+```
+
+# Numeric variables
+```{r numeric-variables, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+
+# Summary of numeric variables - 1999
+summary(df_nhanes_1999$weight)
+summary(df_nhanes_1999$height)
+summary(df_nhanes_1999$bmi)
+summary(df_nhanes_1999$waist)
+summary(df_nhanes_1999$hip)
+summary(df_nhanes_1999$ldl)
+summary(df_nhanes_1999$total_cholesterol)
+
+
+library(dplyr)
+
+df_nhanes_1999 <- df_nhanes_1999 %>%
+  mutate(
+    weight = ifelse(weight >= 26.45 & weight <= 661.39, weight, NA),        # Plausible range: 12-300 kg => 26.45 - 661.39 lbs
+    height = ifelse(height >= 100 & height <= 250, height, NA),             # Plausible range: 100 - 250 cm
+    bmi = ifelse(bmi >= 10 & bmi <= 80, bmi, NA),                           # Plausible range: 10-80 kg/m2
+    waist = ifelse(waist >= 30 & waist <= 300, waist, NA),                  # Plausible range: 30 - 300 cm
+    hip = ifelse(hip >= 40 & hip <= 300, hip, NA),                          # Plausible range: 40 - 300 cm
+    ldl = ifelse(ldl >= 19.33 & ldl <= 386.65, ldl, NA),                    # Plausible range: 0.5 - 10 mmol/L => 19.33 - 386.65 mg/dl 
+    total_cholesterol = ifelse(
+      total_cholesterol >= 1.75 & total_cholesterol <= 20,                  # Plausible range: 1.75 - 20 mmol/L => 67.66 - 773.31 mg/dl  
+      total_cholesterol, NA
+    )
+  )
+
+
+# Summary of numeric variables - 2011
+summary(df_nhanes_2011$weight)
+summary(df_nhanes_2011$height)
+summary(df_nhanes_2011$bmi)
+summary(df_nhanes_2011$waist)
+summary(df_nhanes_2011$hip)
+summary(df_nhanes_2011$ldl)
+summary(df_nhanes_2011$total_cholesterol)
+
+df_nhanes_2011 <- df_nhanes_2011 %>%
+  mutate(
+    weight = ifelse(weight >= 26.45 & weight <= 661.39, weight, NA),        # Plausible range: 12-300 kg => 26.45 - 661.39 lbs
+    height = ifelse(height >= 100 & height <= 250, height, NA),             # Plausible range: 100 - 250 cm
+    bmi = ifelse(bmi >= 10 & bmi <= 80, bmi, NA),                           # Plausible range: 10-80 kg/m2
+    waist = ifelse(waist >= 30 & waist <= 300, waist, NA),                  # Plausible range: 30 - 300 cm
+    hip = ifelse(hip >= 40 & hip <= 300, hip, NA),                          # Plausible range: 40 - 300 cm
+    ldl = ifelse(ldl >= 19.33 & ldl <= 386.65, ldl, NA),                    # Plausible range: 0.5 - 10 mmol/L => 19.33 - 386.65 mg/dl 
+    total_cholesterol = ifelse(
+      total_cholesterol >= 1.75 & total_cholesterol <= 20,                  # Plausible range: 1.75 - 20 mmol/L => 67.66 - 773.31 mg/dl  
+      total_cholesterol, NA
+    )
+  )
+
+
+
+```
+
+
+# Labeling both datasets
+```{r labeling, ECHO=FALSE, message=FALSE, warning=FALSE}
+label_nhanes <- function(label) {
+  label %>%
+    mutate(
+      # Sex
+      sex = factor(sex,
+                   levels = c(1, 2),
+                   labels = c("Men", "Women")),
+
+      # TB variables
+      tb_history = factor(tb_history,
+                          levels = c(1, 0, 9),
+                          labels = c("Yes", "No", "Refused/DK")),
+      tb_treatment = factor(tb_treatment,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      tb_skin_test = factor(tb_skin_test,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      tb_skin_test_result = factor(tb_skin_test_result,
+                                   levels = c(1, 0, 9),
+                                   labels = c("Positive", "Negative", "Refused/DK")),
+      tb_medication_use = factor(tb_medication_use,
+                                 levels = c(1, 0, 9),
+                                 labels = c("Yes", "No", "Refused/DK")),
+
+      # Diabetes self-report + labs
+      self_db = factor(self_db,
+                       levels = c(1, 0, 9),
+                       labels = c("Yes", "No", "Refused/DK")),
+      drug_insu_db = factor(drug_insu_db,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      drug_pill_db = factor(drug_pill_db,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      self_lab_dm = factor(self_lab_dm,
+                           levels = c(1, 0),
+                           labels = c("Diabetes", "No Diabetes")),
+
+      # Family history
+      family_hx_db = factor(family_hx_db,
+                            levels = c(1, 0),
+                            labels = c("Yes", "No")),
+
+      # Race/Ethnicity
+      race = factor(race,
+                    levels = c(0, 1, 2, 3, 9),
+                    labels = c("Non-Hispanic Black", 
+                               "Non-Hispanic White", 
+                               "Mexican/Other Hispanic", 
+                               "Other/Multiracial", 
+                               "Missing")),
+      ethnicity = factor(ethnicity,
+                         levels = c(1, 2, 9),
+                         labels = c("Non-Hispanic", "Hispanic", "Missing")),
+
+      # Education
+      edu_adult = factor(edu_adult,
+                         levels = c(1, 2, 3, 4, 9),
+                         labels = c("< High School", 
+                                    "High School Grad", 
+                                    "Some College/AA", 
+                                    "College+", 
+                                    "Refused/DK"))
+    )
+}
+
+df_nhanes_1999 <- label_nhanes(df_nhanes_1999)
+df_nhanes_2011 <- label_nhanes(df_nhanes_2011)
+
+```
+
+# Exploratory data analysis
+
+```{r exploratory data analysis, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+###==== 1999 - 2000 =======
+#TB (n=35) 1=yes -> 1 // 2=no -> 0 // 7=refused // 9=DK // .=NA
+table(df_nhanes_1999$tb_history)
+
+#DM (n=630) 1=yes 2=no 3=borderline 7=refused 9=DK .=NA
+table(df_nhanes_1999$self_db)       # DM self reported (n=489)
+table(df_nhanes_1999$self_lab_dm)   # DM self reported + Labs (n=630)
+
+#DM and TB (n=3)
+table(df_nhanes_1999$tb_history, df_nhanes_1999$self_db) # DM and TB self reported (n=1)
+table(df_nhanes_1999$tb_history, df_nhanes_1999$self_lab_dm) # DM self reported&Lab and TB self reported (n=3)
+
+
+###==== 2011 - 2012 =======
+#TB (n=44)
+table(df_nhanes_2011$tb_history)
+
+#DM (n=708)
+table(df_nhanes_2011$self_db)       # DM self reported (n=708)
+table(df_nhanes_2011$self_lab_dm)   # DM self reported + Labs (n=946)
+
+
+#DM and TB (n=5)
+table(df_nhanes_2011$tb_history, df_nhanes_2011$self_db) # DM and TB self reported (n=4)
+table(df_nhanes_2011$tb_history, df_nhanes_2011$self_lab_dm) # DM self reported&Lab and TB self reported (n=5)
+
+```
+
+# New DM and TB variable
+```{r dm_tb, ECHO = FALSE, message=FALSE, results='hide'}
+# For 1999
+df_nhanes_1999 <- df_nhanes_1999 %>%
+  mutate(
+    tb_dm = case_when(
+      self_lab_dm == "Diabetes" & tb_history == "Yes" ~ 1,  # both DM and TB
+      TRUE ~ 0                                               # everything else
+    )
+  )
+
+# For 2011
+df_nhanes_2011 <- df_nhanes_2011 %>%
+  mutate(
+    tb_dm = case_when(
+      self_lab_dm == "Diabetes" & tb_history == "Yes" ~ 1,
+      TRUE ~ 0
+    )
+  )
+
+# Labeling both datasets
+label_tb_dm <- function(tb_dm) {
+  tb_dm %>%
+    mutate(
+      # diabetes & tuberculosis
+      tb_dm = factor(tb_dm,
+                   levels = c(0, 1),
+                   labels = c("No", "Yes"))
+    )
+}
+
+df_nhanes_1999 <- label_tb_dm(df_nhanes_1999)
+df_nhanes_2011 <- label_tb_dm(df_nhanes_2011)
+
+#Checking
+table(df_nhanes_1999$tb_dm)
+table(df_nhanes_2011$tb_dm)
+
+```
+
+# Preliminary results: 
+
+## NHANES 1999
+
+```{r, labeling-variables-data, echo=FALSE, include=FALSE}
+library(labelled)
+
+# Create a named list of variable labels
+nhanes_var_labels <- list(
+  age = "Age",                        
+  sex = "Sex",
+  race = "Race",
+  ethnicity = "Ethnicity",
+  edu_adult = "Education Level",
+  self_db = "Self-reported diabetes",
+  age_told_db = "Age told DM",
+  drug_insu_db = "Diabetes Mellitus on insulin",
+  drug_pill_db = "Diabetes Mellitus on Oral med",
+  self_lab_dm = "DM self-reported and by lab def",
+  family_hx_db = "Family history of DM",
+  tb_history = "TB History ever",
+  tb_treatment = "TB treatment ever",
+  age_told_tb  = "Age told TB",
+  tb_skin_test = "TB skin test ever",
+  tb_skin_test_result = "TB skin test POSITIVE ever",
+  tb_medication_use = "TB medication use ever",
+  tb_dm = "TB & DM",
+  fasting_minutes = "Fasting (minutes)",
+  fasting_hours = "Fasting (hours)",
+  fasting_8h = "8h fasting",
+  fasting_12h = "12h fasting",
+  fglu = "Fasting Glucose (mg/dl)",
+  hba1c = "HbA1c (%)",
+  pogtt = "Oral Glucose Tolerance test (OGTT, mg/dl)",
+  insulin = "insulin",
+  creatinine_urine = "Creatinine in urine",
+  total_cholesterol = "Total cholesterol (mg/dL)",
+  ldl = "LDL (mg/dL)",
+  weight = "Weight (lbs)",
+  height = "Height (cm)",
+  bmi = "BMI (kg/m2)",
+  waist = "Waist (cm)",
+  hip = "Hip (cm)",
+  blood_pressure_sys = "Systolic blood pressure (mmHg)",
+  blood_pressure_diast = "Diastolic blood pressure (mmHg)"
+)
+
+# Apply labels to both datasets
+var_label(df_nhanes_1999) <- nhanes_var_labels
+var_label(df_nhanes_2011) <- nhanes_var_labels
+
+```
+
+
+```{r, NHANES TABLE (1999), message=FALSE, echo=TRUE}
+library(gtsummary)
+
+# Select the variables you want to include
+vars_to_summarize <- c(
+  "age", "sex", "race", "self_db", "age_told_db", "drug_insu_db", "drug_pill_db",
+  "self_lab_dm", "family_hx_db",
+  "tb_history", "age_told_tb", "tb_treatment", "fasting_minutes", "fglu", "hba1c", "total_cholesterol", "ldl", "weight", "height", "bmi",  "waist", "hip", "blood_pressure_sys", "blood_pressure_diast", "tb_dm")
+
+# Create table1
+NHANES_1999_table <- df_nhanes_1999 %>%
+  select(all_of(vars_to_summarize), tb_dm) %>%  # include the grouping variable
+  tbl_summary(
+    by = tb_dm,  # group by TB+DM
+    type = list(
+      age ~ "continuous",
+      age_told_db ~ "continuous",
+      age_told_tb ~ "continuous",
+      fglu ~ "continuous",
+      hba1c ~ "continuous",
+      fasting_minutes ~ "continuous",
+      total_cholesterol ~ "continuous",
+      ldl ~ "continuous",
+      weight ~ "continuous",
+      height ~ "continuous",
+      bmi ~ "continuous",
+      waist ~ "continuous",
+      hip ~ "continuous",
+      blood_pressure_sys ~ "continuous",
+      blood_pressure_diast ~ "continuous"
+    ),
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    label = var_label(df_nhanes_1999),
+    missing = "no"
+  ) 
+
+NHANES_1999_table <- NHANES_1999_table %>%
+  modify_header(label ~ "**Variables**") %>%
+  modify_spanning_header(c(stat_1, stat_2) ~ "**Summary Statistics (NHANES 1999)**")
+
+NHANES_1999_table
+
+```
+
+
+
+# Preliminary results: 
+
+## NHANES 2011
+
+```{r, NHANES TABLE (2011), message=FALSE, echo=TRUE}
+library(gtsummary)
+
+NHANES_2011_table <- df_nhanes_2011 %>%
+  select(all_of(vars_to_summarize), tb_dm) %>%  # include the grouping variable
+  tbl_summary(
+    by = tb_dm,  # group by TB+DM
+    type = list(
+      age ~ "continuous",
+      age_told_db ~ "continuous",
+      age_told_tb ~ "continuous",
+      fglu ~ "continuous",
+      hba1c ~ "continuous",
+      fasting_minutes ~ "continuous",
+      total_cholesterol ~ "continuous",
+      ldl ~ "continuous",
+      weight ~ "continuous",
+      height ~ "continuous",
+      bmi ~ "continuous",
+      waist ~ "continuous",
+      hip ~ "continuous",
+      blood_pressure_sys ~ "continuous",
+      blood_pressure_diast ~ "continuous"
+    ),
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    label = var_label(df_nhanes_1999),
+    missing = "no"
+  ) 
+
+NHANES_2011_table <- NHANES_2011_table %>%
+  modify_header(label ~ "**Variables**") %>%
+  modify_spanning_header(c(stat_1, stat_2) ~ "**Summary Statistics (NHANES 2011)**")
+
+NHANES_2011_table
+
+```
+
+# Preliminary results:
+
+## NHANES 1999 AND 2011
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+library(dplyr)
+
+df_nhanes_both <- bind_rows(
+  df_nhanes_1999,
+  df_nhanes_2011
+)
+
+# checking 
+table(df_nhanes_both$tb_dm) # n=455
+
+# "Clean" dataset
+df_nhanes_both <- df_nhanes_both %>%
+  filter(tb_dm == "Yes")          # n=8
+
+
+```
+
+```{r, NHANES TABLE (both), message=FALSE, echo=TRUE}
+library(gtsummary)
+
+NHANES_both_table <- df_nhanes_both %>%
+  select(all_of(vars_to_summarize)) %>%   # remove tb_dm from the selection
+  tbl_summary(
+    type = list(
+      age ~ "continuous",
+      age_told_db ~ "continuous",
+      age_told_tb ~ "continuous",
+      fglu ~ "continuous",
+      hba1c ~ "continuous",
+      fasting_minutes ~ "continuous",
+      total_cholesterol ~ "continuous",
+      ldl ~ "continuous",
+      weight ~ "continuous",
+      height ~ "continuous",
+      bmi ~ "continuous",
+      waist ~ "continuous",
+      hip ~ "continuous",
+      blood_pressure_sys ~ "continuous",
+      blood_pressure_diast ~ "continuous"
+    ),
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    label = var_label(df_nhanes_1999),
+    missing = "no"
+  ) %>%
+  modify_header(label ~ "**Variables**") %>%
+  modify_spanning_header(everything() ~ "**Summary Statistics (NHANES 1999 and 2011)**")
+
+NHANES_both_table
+
+```

@@ -1,0 +1,1447 @@
+---
+title: "CARDIA Y00, Y10, Y15, Y20"
+author: "Adriana Gutierrez Yllu"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r set up2 , include=FALSE}
+#install.packages("haven")
+#install.packages("dplyr")
+#install.packages("labelled")
+
+library(haven)
+library(dplyr)
+library(labelled)
+```
+
+## Reading Files: CARDIA Y00
+```{r importing-Y00, ECHO=FALSE, message=FALSE, warning=FALSE}
+
+# >>>>> YEAR 00 <<<<<<
+
+library(readr)
+
+#Be sure to replace the file path with the appropriate file path on your own computer. 
+
+base_dir <- "/Volumes/Data/Coronary Artery Risk Development in Young Adults (CARDIA)/Main_Study/Y00/DATA/csv"
+
+file_paths <- c(
+  file.path(base_dir, "aaf01.csv"),
+  file.path(base_dir, "aaf08v2.csv"),
+  file.path(base_dir, "aaf09med.csv"),
+  file.path(base_dir, "aaf09gen.csv"),
+  file.path(base_dir, "aachem.csv")
+)
+
+for (i in seq_along(file_paths)) {
+  oname <- paste0("df", i)
+  assign(oname, read_csv(file_paths[i]), envir = .GlobalEnv)
+}
+```
+
+## Cleaning: CARDIA Y00
+```{r merging-V1, echo=TRUE, warning=FALSE, message=FALSE}
+#merging the data set
+data_cardia_00 <- merge(df1, df2,  by ="RID", all = T) 
+data_cardia_00 <- merge(data_cardia_00, df3,  by ="RID", all = T)
+data_cardia_00 <- merge(data_cardia_00, df4,  by ="RID", all = T)
+data_cardia_00 <- merge(data_cardia_00, df5,  by ="RID", all = T)
+
+# cleaning
+rm(df1, df2, df3, df4, df5,
+   df6, file_paths, i, oname)
+
+# Cleaning data
+attach(data_cardia_00)
+
+#creating new data frame which only has the variables of interest
+df_cardia_00 <- data.frame(
+  id_study = 'CARDIA_Y00',
+  id       = as.character(RID),
+  
+  psu1     = NA,       
+  psu2     = NA,
+  
+  stratum1 = NA,
+  stratum2 = NA,
+
+  psu_weight1 = NA,
+  psu_weight2 = NA,
+  psu_weight3 = NA,
+  
+  # demographics
+  sex     = A01SEX, 
+  age     = as.numeric(A01AGE2),
+  race    = A01RACE2,
+  edu_adult = NA, #level of education
+  edu_years = as.numeric(A01ED2), #Years of education
+  edu_child = NA,
+  ethnicity = NA,
+  
+  #diabetes
+  self_db      = A08DIAB, #diabetes ever
+  age_told_db  = A09DIBAG,
+  drug_insu_db = NA, #the question asked for for all types of med to control glucose, not "insulin" or oral meds, if needed A09MDCD1/2/3/4 == 47 should be those who had tx for dm (overall, not only insulin)
+  drug_pill_db = NA, #the question asked for for all types of med to control glucose, not "insulin" or oral meds, if needed A09MDCD1/2/3/4 == 47 should be those who had tx for dm (overall, not only pills)
+  family_hx_db = NA,
+  
+  #labs
+  fasting_minutes = NA,
+  fasting_hours   = NA,
+  fasting_8h      = NA,
+  fasting_12h     = NA,
+  fglu         = as.numeric(AL3_GLU), units_fglu  = 'mg/dL',
+  hba1c        = NA, units_hba1c = 'NA',
+  pogtt          = NA, units_pogtt   = 'NA',
+  insulin      = NA, units_insulin = 'NA',
+  
+  creatinine_urine = NA, creatinine_urine_units = 'NA',
+  
+  total_cholesterol        = NA, units_cholesterol = 'mg/dL',
+  ldl                      = NA, units_ldl = 'mg/dL',
+  
+  #tb
+  tb_history = NA,
+  age_told_tb  = NA,
+  tb_treatment = NA,
+  tb_skin_test = NA, #self-reported
+  tb_skin_test_result = NA, #self-reported - ONLY FOR POSITIVE SKIN TEST
+  tb_medication_use = NA,
+  
+  # Measurements
+  weight                   = NA, units_weight = 'kg',
+  height                   = NA, units_height = 'cm',
+  bmi                      = NA, units_bmi = 'KG/M**2',
+  waist                    = NA, units_waist = 'cm',            #mean of 2 measures
+  hip                      = NA, units_hip = 'cm',            #mean of 2 measures
+  blood_pressure_sys       = NA, units_sbp = 'mmHg',
+  blood_pressure_diast     = NA, units_dbp = 'mmHg'
+)
+
+# Extract baseline demographics from Y00
+baseline_demo <- df_cardia_00 %>%
+  select(
+    id,
+    sex,
+    age,
+    race
+  ) 
+
+
+# Eliminating duplicates
+df_cardia_00 <- df_cardia_00 %>%
+  distinct(id, .keep_all = TRUE)
+
+
+detach(data_cardia_00)
+
+
+
+```
+
+## Reading Files: CARDIA Y10
+```{r importing-Y10, echo=TRUE, warning=FALSE, message=FALSE}
+# >>>>> YEAR 10 <<<<<<
+
+library(readr)
+
+#Be sure to replace the file path with the appropriate file path on your own computer. 
+
+base_dir <- "/Volumes/Data/Coronary Artery Risk Development in Young Adults (CARDIA)/Main_Study/Y10/DATA/csv"
+
+file_paths <- c(
+  file.path(base_dir, "earef.csv"),  
+  file.path(base_dir, "eaf08.csv"),  
+  file.path(base_dir, "eaf09tb.csv"),
+  file.path(base_dir, "eaf09mhm.csv"),
+  file.path(base_dir, "eaglu.csv"),
+  file.path(base_dir, "eains.csv"),
+  file.path(base_dir, "eachem.csv"),
+  file.path(base_dir, "eaf02.csv"),
+  file.path(base_dir, "eaf20.csv"),
+  file.path(base_dir, "ealip.csv"),
+  file.path(base_dir, "eaf05.csv")
+)
+
+for (i in seq_along(file_paths)) {
+  oname <- paste0("df", i)
+  assign(oname, read_csv(file_paths[i]), envir = .GlobalEnv)
+}
+```
+
+## Cleaning: CARDIA Y10
+```{r merging-V2, echo=TRUE, warning=FALSE, message=FALSE}
+#merging the data set
+data_cardia_10 <- merge(df1, df2,  by ="RID", all = T) 
+data_cardia_10 <- merge(data_cardia_10, df3,  by ="RID", all = T)
+data_cardia_10 <- merge(data_cardia_10, df4,  by ="RID", all = T)
+data_cardia_10 <- merge(data_cardia_10, df5,  by ="RID", all = T)
+data_cardia_10 <- merge(data_cardia_10, df6,  by ="RID", all = T)
+data_cardia_10 <- merge(data_cardia_10, df7,  by ="RID", all = T)
+data_cardia_10 <- merge(data_cardia_10, df8,  by ="RID", all = T)
+data_cardia_10 <- merge(data_cardia_10, df9,  by ="RID", all = T)
+data_cardia_10 <- merge(data_cardia_10, df10,  by ="RID", all = T)
+data_cardia_10 <- merge(data_cardia_10, df11,  by ="RID", all = T)
+
+
+
+# cleaning
+rm(df1, df2, df3, df4, df5,
+   df6, df7, df8, df9, df10, df11, file_paths, i, oname)
+
+# Cleaning data
+attach(data_cardia_10)
+
+#creating new data frame which only has the variables of interest
+df_cardia_10 <- data.frame(
+  id_study = 'CARDIA_Y10',
+  id       = as.character(RID),
+  
+  psu1     = NA,       # check when merging
+  psu2     = NA,
+  
+  stratum1 = NA,
+  stratum2 = NA,
+
+  psu_weight1 = NA,
+  psu_weight2 = NA,
+  psu_weight3 = NA,
+  
+  # demographics
+  sex     = as.character(SEX), 
+  age     = as.numeric(EX5_AGE),
+  race    = as.character(RACE),
+  edu_adult = NA, #level of education
+  edu_years = NA, #as.character(A03ED), #Years of education 10 = 10 or less years , 17 = 17 or more years// E03ED: 11= 11 or less, 18 = 18 or more , 99=no answer
+  edu_child = NA,
+  ethnicity = NA,
+  
+  #diabetes
+  self_db      = as.character(E08DIAB), #diabetes ever
+  age_told_db  = as.numeric(E08DIBAG),
+  drug_insu_db = NA, #the question asked for for all types of med to control glucose, not "insulin" or oral meds, if needed A09MDCD1/2/3/4 == 47 should be those who had tx for dm (overall, not only insulin)
+  drug_pill_db = NA, #the question asked for for all types of med to control glucose, not "insulin" or oral meds, if needed A09MDCD1/2/3/4 == 47 should be those who had tx for dm (overall, not only pills)
+  family_hx_db = NA,
+  
+  #labs
+  fasting_minutes = as.numeric(E05FSTMN),
+  fasting_hours   = NA,
+  fasting_8h      = as.character(E05FST8H),
+  fasting_12h     = as.character(E05FAST),
+  fglu         = as.numeric(EL7GLU), units_fglu  = 'mg/dL',
+  hba1c        = NA, units_hba1c = 'NA',
+  pogtt          = as.numeric(EL7GLU2H), units_pogtt   = 'mg/dL',
+  insulin      = as.numeric(EL7INS), units_insulin = 'uU/mL',
+  
+  creatinine_urine = as.numeric(EL7CREAT), creatinine_urine_units = 'mg/dL',
+  
+  total_cholesterol        = as.numeric(EL1CHOL), units_cholesterol = 'mg/dL',
+  ldl                      = as.numeric(EL1LDL), units_ldl = 'mg/dL',
+  
+  #tb
+  tb_history = as.character(E08TB),
+  age_told_tb  = as.numeric(E08TBAG),
+  tb_treatment = NA,
+  tb_skin_test = NA, #self-reported
+  tb_skin_test_result = as.character(E09TBPOS), #self-reported - ONLY FOR POSITIVE SKIN TEST
+  tb_medication_use = NA,
+  
+  # Measurements
+  weight                   = as.numeric(E20WGT), units_weight = 'kg',
+  height                   = as.numeric(E20HGT), units_height = 'cm',
+  bmi                      = as.numeric(E20BMI), units_bmi = 'KG/M**2',
+  waist                    = as.numeric(E20WST), units_waist = 'cm',            #mean of 2 measures
+  hip                      = as.numeric(E20HIP), units_hip = 'cm',            #mean of 2 measures
+  blood_pressure_sys       = as.numeric(E02AVGSY), units_sbp = 'mmHg',
+  blood_pressure_diast     = as.numeric(E02AVGDI), units_dbp = 'mmHg'
+)
+
+# Eliminating duplicates
+df_cardia_10 <- df_cardia_10 %>%
+  distinct(id, .keep_all = TRUE)
+
+detach(data_cardia_10)
+
+```
+
+
+## Reading Files: CARDIA Y15
+
+```{r importing-Y15, echo=TRUE, warning=FALSE, message=FALSE}
+# >>>>> YEAR 15 <<<<<<
+
+library(readr)
+
+#Be sure to replace the file path with the appropriate file path on your own computer. 
+
+base_dir <- "/Volumes/Data/Coronary Artery Risk Development in Young Adults (CARDIA)/Main_Study/Y15/DATA/csv"
+
+file_paths <- c(
+  file.path(base_dir, "faref.csv"),
+  file.path(base_dir, "faf03.csv"),
+  file.path(base_dir, "faf08.csv"),
+  file.path(base_dir, "faf09tb.csv"),
+  file.path(base_dir, "faglu.csv"),
+  file.path(base_dir, "fains.csv"),
+  file.path(base_dir, "faf20.csv"),
+  file.path(base_dir, "faf02.csv"),
+  file.path(base_dir, "falip.csv"),
+  file.path(base_dir, "faf05.csv")
+  
+)
+
+for (i in seq_along(file_paths)) {
+  oname <- paste0("df", i)
+  assign(oname, read_csv(file_paths[i]), envir = .GlobalEnv)
+}
+```
+
+## Cleaning: CARDIA Y15
+
+```{r merging-V3, echo=TRUE, warning=FALSE, message=FALSE}
+#merging the data set
+data_cardia_15 <- merge(df1, df2,  by ="RID", all = T) 
+data_cardia_15 <- merge(data_cardia_15, df3,  by ="RID", all = T)
+data_cardia_15 <- merge(data_cardia_15, df4,  by ="RID", all = T)
+data_cardia_15 <- merge(data_cardia_15, df5,  by ="RID", all = T)
+data_cardia_15 <- merge(data_cardia_15, df6,  by ="RID", all = T)
+data_cardia_15 <- merge(data_cardia_15, df7,  by ="RID", all = T)
+data_cardia_15 <- merge(data_cardia_15, df8,  by ="RID", all = T)
+data_cardia_15 <- merge(data_cardia_15, df9,  by ="RID", all = T)
+data_cardia_15 <- merge(data_cardia_15, df10,  by ="RID", all = T)
+
+
+# cleaning
+rm(df1, df2, df3, df4, df5,
+   df6, df7, df8, df9, df10, file_paths, i, oname)
+
+attach(data_cardia_15)
+
+#creating new data frame which only has the variables of interest
+df_cardia_15 <- data.frame(
+  id_study = 'CARDIA_Y15',
+  id       = as.character(RID),
+  
+  psu1     = NA,       # check when merging
+  psu2     = NA,
+  
+  stratum1 = NA,
+  stratum2 = NA,
+
+  psu_weight1 = NA,
+  psu_weight2 = NA,
+  psu_weight3 = NA,
+  
+  # demographics
+  sex     = SEX, 
+  #age    = will be borrowed from Y00 (baseline)
+  race    = RACE,
+  edu_adult = F03DEGRE, #level of education
+  edu_years = as.numeric(F03ED.x),
+  edu_child = NA,
+  ethnicity = NA,
+  
+  #diabetes
+  self_db      = F08DIAB, #diabetes ever
+  age_told_db  = F08DIBAG,
+  drug_insu_db = NA,
+  drug_pill_db = NA, 
+  family_hx_db = NA,
+  
+  #labs
+  fasting_minutes = as.numeric(F05FSTMN),
+  fasting_hours   = NA,
+  fasting_8h      = NA,
+  fasting_12h     = as.character(F05FAST),
+  fglu         = as.numeric(FL7GLU), units_fglu  = 'mg/dL',
+  hba1c        = NA, units_hba1c = 'NA',
+  pogtt          = NA, units_pogtt   = 'NA',
+  insulin      = as.numeric(FL7INS), units_insulin = 'uU/mL',
+  
+  creatinine_urine = NA, creatinine_urine_units = 'NA',
+  
+  total_cholesterol        = as.numeric(FL1CHOL), units_cholesterol = 'mg/dL',
+  ldl                      = as.numeric(FL1LDL), units_ldl = 'mg/dL',
+  
+  #tb
+  tb_history = F08TB,
+  age_told_tb  = as.numeric(F08TBAG),
+  tb_treatment = NA,
+  tb_skin_test = NA, 
+  tb_skin_test_result = F09TBPOS, #self-reported - ONLY FOR POSITIVE SKIN TEST
+  tb_medication_use = NA,
+  
+  # Measurements
+  weight                   = as.numeric(F20WGT), units_weight = 'kg',
+  height                   = as.numeric(F20HGT), units_height = 'cm',
+  bmi                      = as.numeric(F20BMI), units_bmi = 'KG/M**2',
+  waist                    = as.numeric(F20WST1), units_waist = 'cm',
+  hip                      = NA,                  units_hip = 'cm',
+  blood_pressure_sys       = as.numeric(F02AVGSY), units_sbp = 'mmHg',
+  blood_pressure_diast     = as.numeric(F02AVGDI), units_dbp = 'mmHg'
+)
+
+detach(data_cardia_15)
+
+
+### Borrowing "Age" from baseline (CARDIA - Y00)
+df_cardia_15 <- df_cardia_15 %>%
+  left_join(
+    baseline_demo %>% select(id, age),
+    by = "id"
+  )
+
+# Eliminating duplicates
+df_cardia_15 <- df_cardia_15 %>%
+  distinct(id, .keep_all = TRUE)
+
+```
+
+## Reading Files: CARDIA Y20
+```{r, importing-cardia-Y20, echo=TRUE, warning=FALSE, message=FALSE}
+# >>>>> YEAR 20 <<<<<<
+
+library(readr)
+
+#Be sure to replace the file path with the appropriate file path on your own computer. 
+
+base_dir <- "/Volumes/Data/Coronary Artery Risk Development in Young Adults (CARDIA)/Main_Study/Y20/DATA/csv"
+
+file_paths <- c(
+  file.path(base_dir, "gaf03.csv"),
+  file.path(base_dir, "gaf08.csv"),
+  file.path(base_dir, "gaf09tb.csv"),
+  file.path(base_dir, "gaf09med.csv"),
+  file.path(base_dir, "gaglu.csv"),
+  file.path(base_dir, "gaf09med.csv"),
+  file.path(base_dir, "gaf20.csv"),
+  file.path(base_dir, "gaf02.csv"),
+  file.path(base_dir, "galip.csv"),
+  file.path(base_dir, "gaf05.csv")
+)
+
+for (i in seq_along(file_paths)) {
+  oname <- paste0("df", i)
+  assign(oname, read_csv(file_paths[i]), envir = .GlobalEnv)
+}
+```
+
+## Cleaning: CARDIA Y20
+```{r merging-cardia-Y20, echo=TRUE, warning=FALSE, message=FALSE}
+#merging the data set
+data_cardia_20 <- merge(df1, df2,  by ="RID", all = T) 
+data_cardia_20 <- merge(data_cardia_20, df3,  by ="RID", all = T)
+data_cardia_20 <- merge(data_cardia_20, df4,  by ="RID", all = T)
+data_cardia_20 <- merge(data_cardia_20, df5,  by ="RID", all = T)
+data_cardia_20 <- merge(data_cardia_20, df6,  by ="RID", all = T)
+data_cardia_20 <- merge(data_cardia_20, df7,  by ="RID", all = T)
+data_cardia_20 <- merge(data_cardia_20, df8,  by ="RID", all = T)
+data_cardia_20 <- merge(data_cardia_20, df9,  by ="RID", all = T)
+data_cardia_20 <- merge(data_cardia_20, df10,  by ="RID", all = T)
+
+
+# cleaning
+rm(df1, df2, df3, df4, df5,
+   df6, df7, df8, df9, df10, file_paths, i, oname)
+
+attach(data_cardia_20)
+
+
+#creating new data frame which only has the variables of interest
+df_cardia_20 <- data.frame(
+  id_study = 'CARDIA_Y20',
+  id       = as.character(RID),
+  
+  psu1     = NA,       # check when merging
+  psu2     = NA,
+  
+  stratum1 = NA,
+  stratum2 = NA,
+
+  psu_weight1 = NA,
+  psu_weight2 = NA,
+  psu_weight3 = NA,
+ 
+  # demographics
+  #sex     = will be borrowed from Y00 (baseline), 
+  #age     = will be borrowed from Y00 (baseline),
+  #race    = will be borrowed from Y00 (baseline),
+  edu_adult = G03DEGRE, #level of education
+  edu_years = NA,
+  edu_child = NA,
+  ethnicity = NA,
+  
+  #diabetes
+  self_db      = G08DIAB, #diabetes ever
+  age_told_db  = G08DIBAG,
+  drug_insu_db = NA, #G08MEDDIA: Are you taking medications for diabetes? 1=no / 2=yes / 8=not sure
+  drug_pill_db = G08NOINS, #but only last 4 weeks, they asked for diet or pills
+  family_hx_db = NA,
+  
+  #labs
+  fasting_minutes = as.numeric(G05FSTMN),
+  fasting_hours   = NA,
+  fasting_8h      = NA,
+  fasting_12h     = as.character(G05FAST),
+  fglu         = as.numeric(GL7CGLU), units_fglu  = 'mg/dL',
+  hba1c        = NA, units_hba1c = 'NA',
+  pogtt          = as.numeric(GL7GLU2H), units_pogtt   = 'mg/dL',
+  insulin      = NA, units_insulin = 'NA',
+  
+  creatinine_urine = NA, creatinine_urine_units = 'NA',
+  
+  total_cholesterol        = as.numeric(GL1CHOL), units_cholesterol = 'mg/dL',
+  ldl                      = as.numeric(GL1LDL), units_ldl = 'mg/dL',
+  
+  #tb
+  tb_history = G08TB,
+  age_told_tb  = as.numeric(G08TBAG),
+  tb_treatment = NA,
+  tb_skin_test = G09TBPOS, 
+  tb_skin_test_result = NA, #F09TBPOS: self-reported - ONLY FOR POSITIVE SKIN TEST
+  tb_medication_use = NA,
+  
+  # Measurements
+  weight                   = as.numeric(G20WGT), units_weight = 'kg',
+  height                   = as.numeric(G20HGT), units_height = 'cm',
+  bmi                      = as.numeric(G20BMI), units_bmi = 'KG/M**2',
+  waist                    = as.numeric(G20WST), units_waist = 'cm',
+  hip                      = NA, units_hip = NA,
+  blood_pressure_sys       = as.numeric(G02SAVG), units_sbp = 'mmHg',
+  blood_pressure_diast     = as.numeric(G02DAVG), units_dbp = 'mmHg'
+)
+
+# Borrowing "Sex, Age, and Race" from Y00
+df_cardia_20 <- df_cardia_20 %>%
+  left_join(
+    baseline_demo %>% select(id, sex, age, race),
+    by = "id"
+  )
+
+detach(data_cardia_20)
+
+```
+
+
+```{r excluding,  echo=FALSE, message=FALSE, results='hide'}
+#excluding those with id = "(REST IS UNREADABLE)" or "(UNREADABLE)" -> all relevant variables were missing
+library(dplyr)
+
+df_cardia_20 <- df_cardia_20 %>%
+  filter(!id %in% c("(REST IS UNREADABLE)", "(UNREADABLE)"))
+
+nrow(df_cardia_20)
+
+df_cardia_20 %>%
+  filter(id %in% c("(REST IS UNREADABLE)", "(UNREADABLE)"))
+
+# Eliminating duplicates
+df_cardia_20 <- df_cardia_20 %>%
+  distinct(id, .keep_all = TRUE)
+
+```
+
+# Re-coding Y00, Y10, Y15, Y20 datasets
+
+```{r cardia recode, echo=FALSE, message=FALSE, results='hide'}
+
+recode_cardia <- function(df) {
+  df %>%
+    mutate(
+
+      # sex
+      sex = case_when(
+        sex == 1 ~ 1, #men
+        sex == 2 ~ 2, #women
+        TRUE ~ NA_real_
+      ),
+
+      # yes/no variables
+      across(
+        c(self_db, drug_insu_db, drug_pill_db,
+          tb_history, tb_treatment, tb_medication_use,
+          tb_skin_test, tb_skin_test_result, fasting_8h),
+        ~ case_when(
+          . == 2 ~ 1,
+          . == 1 ~ 0,
+          . == 8 ~ 9,
+          TRUE ~ NA_real_
+        )
+      ),
+      
+      # sex
+      fasting_12h = case_when(
+        fasting_12h == "NO"  ~ 0, 
+        fasting_12h == "YES" ~ 1, 
+        TRUE ~ NA_real_
+      ),
+
+      # race
+      race = case_when(
+        race == 4 ~ 0,                # black
+        race == 5 ~ 1,                # white
+        race == 3 ~ 2,                # hispanic
+        race %in% c(6, 7) ~ 3,        # other/multiracial
+        race == 8 ~ 9,                # DK
+        TRUE ~ NA_real_               # missing
+      ),
+
+      # education
+      edu_adult = case_when(
+        edu_adult == 1 ~ 2,           # high school
+        edu_adult %in% c(2, 3) ~ 3,   # some college
+        edu_adult == 4 ~ 4,           # graduate studies
+        edu_adult == 9 ~ 9,           # refused / DK / other (other included in CARDIA)
+        TRUE ~ 9               # missing
+      )
+
+    )
+}
+
+# Re coding all dataset (Y00, Y10, Y15, and Y20)
+df_cardia_00 <- recode_cardia(df_cardia_00)
+df_cardia_10 <- recode_cardia(df_cardia_10)
+df_cardia_15 <- recode_cardia(df_cardia_15)
+df_cardia_20 <- recode_cardia(df_cardia_20)
+
+```
+
+# Cleaning numeric variables
+
+```{r numeric-variables, echo=TRUE, message=FALSE, results='hide'}
+# Summary of numeric variables - Y10
+summary(df_cardia_10$weight)
+summary(df_cardia_10$height)
+summary(df_cardia_10$bmi)
+summary(df_cardia_10$waist)
+summary(df_cardia_10$hip)
+summary(df_cardia_10$ldl)
+summary(df_cardia_10$total_cholesterol)
+
+# weight : lbs -> kg
+df_cardia_10 <- df_cardia_10 %>%
+  mutate(weight = weight * 0.453592)
+
+
+library(dplyr)
+
+df_cardia_10 <- df_cardia_10 %>%
+  mutate(
+    weight = ifelse(weight >= 12 & weight <= 300, weight, NA),        # Plausible range: 12-300 kg => 26.45 - 661.39 lbs
+    height = ifelse(height >= 100 & height <= 250, height, NA),             # Plausible range: 100 - 250 cm
+    bmi = ifelse(bmi >= 10 & bmi <= 80, bmi, NA),                           # Plausible range: 10-80 kg/m2
+    waist = ifelse(waist >= 30 & waist <= 300, waist, NA),                  # Plausible range: 30 - 300 cm
+    hip = ifelse(hip >= 40 & hip <= 300, hip, NA),                          # Plausible range: 40 - 300 cm
+    ldl = ifelse(ldl >= 19.33 & ldl <= 386.65, ldl, NA),                    # Plausible range: 0.5 - 10 mmol/L => 19.33 - 386.65 mg/dl 
+    total_cholesterol = ifelse(
+      total_cholesterol >= 1.75 & total_cholesterol <= 20,                  # Plausible range: 1.75 - 20 mmol/L => 67.66 - 773.31 mg/dl  
+      total_cholesterol, NA
+    )
+  )
+
+# Summary of numeric variables - Y15
+summary(df_cardia_15$weight)
+summary(df_cardia_15$height)
+summary(df_cardia_15$bmi)
+summary(df_cardia_15$waist)
+summary(df_cardia_15$hip)
+summary(df_cardia_15$ldl)
+summary(df_cardia_15$total_cholesterol)
+
+# weight : lbs -> kg
+df_cardia_15 <- df_cardia_15 %>%
+  mutate(weight = weight * 0.453592)
+
+df_cardia_15 <- df_cardia_15 %>%
+  mutate(
+    weight = ifelse(weight >= 12 & weight <= 300, weight, NA),        # Plausible range: 12-300 kg => 26.45 - 661.39 lbs
+    height = ifelse(height >= 100 & height <= 250, height, NA),             # Plausible range: 100 - 250 cm
+    bmi = ifelse(bmi >= 10 & bmi <= 80, bmi, NA),                           # Plausible range: 10-80 kg/m2
+    waist = ifelse(waist >= 30 & waist <= 300, waist, NA),                  # Plausible range: 30 - 300 cm
+    hip = ifelse(hip >= 40 & hip <= 300, hip, NA),                          # Plausible range: 40 - 300 cm
+    ldl = ifelse(ldl >= 19.33 & ldl <= 386.65, ldl, NA),                    # Plausible range: 0.5 - 10 mmol/L => 19.33 - 386.65 mg/dl 
+    total_cholesterol = ifelse(
+      total_cholesterol >= 1.75 & total_cholesterol <= 20,                  # Plausible range: 1.75 - 20 mmol/L => 67.66 - 773.31 mg/dl  
+      total_cholesterol, NA
+    )
+  )
+
+# Summary of numeric variables - Y20
+summary(df_cardia_20$weight)
+summary(df_cardia_20$height)
+summary(df_cardia_20$bmi)
+summary(df_cardia_20$waist)
+summary(df_cardia_20$hip)
+summary(df_cardia_20$ldl)
+summary(df_cardia_20$total_cholesterol)
+
+# weight : lbs -> kg
+df_cardia_20 <- df_cardia_20 %>%
+  mutate(weight = weight * 0.453592)
+
+
+df_cardia_20 <- df_cardia_20 %>%
+  mutate(
+    weight = ifelse(weight >= 12 & weight <= 300, weight, NA),        # Plausible range: 12-300 kg => 26.45 - 661.39 lbs
+    height = ifelse(height >= 100 & height <= 250, height, NA),             # Plausible range: 100 - 250 cm
+    bmi = ifelse(bmi >= 10 & bmi <= 80, bmi, NA),                           # Plausible range: 10-80 kg/m2
+    waist = ifelse(waist >= 30 & waist <= 300, waist, NA),                  # Plausible range: 30 - 300 cm
+    hip = ifelse(hip >= 40 & hip <= 300, hip, NA),                          # Plausible range: 40 - 300 cm
+    ldl = ifelse(ldl >= 19.33 & ldl <= 386.65, ldl, NA),                    # Plausible range: 0.5 - 10 mmol/L => 19.33 - 386.65 mg/dl 
+    total_cholesterol = ifelse(
+      total_cholesterol >= 1.75 & total_cholesterol <= 20,                  # Plausible range: 1.75 - 20 mmol/L => 67.66 - 773.31 mg/dl  
+      total_cholesterol, NA
+    )
+  )
+
+```
+
+# Blood pressure
+```{r bp, echo=TRUE, message=FALSE, results='hide'}
+# Summary of bp - Y10
+summary(df_cardia_10$blood_pressure_sys)
+summary(df_cardia_10$blood_pressure_diast)
+
+library(dplyr)
+df_cardia_10 <- df_cardia_10 %>%
+  mutate(
+    blood_pressure_sys = ifelse(
+      blood_pressure_sys >= 70 & blood_pressure_sys <= 270,
+      blood_pressure_sys, NA
+    ),
+    blood_pressure_diast = ifelse(
+      blood_pressure_diast >= 30 & blood_pressure_diast <= 150,
+      blood_pressure_diast, NA
+    )
+  )
+
+# Summary of bp - Y15
+summary(df_cardia_15$blood_pressure_sys)
+summary(df_cardia_15$blood_pressure_diast)
+
+df_cardia_15 <- df_cardia_15 %>%
+  mutate(
+    blood_pressure_sys = ifelse(
+      blood_pressure_sys >= 70 & blood_pressure_sys <= 270,
+      blood_pressure_sys, NA
+    ),
+    blood_pressure_diast = ifelse(
+      blood_pressure_diast >= 30 & blood_pressure_diast <= 150,
+      blood_pressure_diast, NA
+    )
+  )
+
+# Summary of bp - Y20
+summary(df_cardia_20$blood_pressure_sys)
+summary(df_cardia_20$blood_pressure_diast)
+
+df_cardia_20 <- df_cardia_20 %>%
+  mutate(
+    blood_pressure_sys = ifelse(
+      blood_pressure_sys >= 70 & blood_pressure_sys <= 270,
+      blood_pressure_sys, NA
+    ),
+    blood_pressure_diast = ifelse(
+      blood_pressure_diast >= 30 & blood_pressure_diast <= 150,
+      blood_pressure_diast, NA
+    )
+  )
+```
+
+# Diabetes definitions
+
+```{r data transf, echo=TRUE, warning=FALSE, message=FALSE}
+# Transforming minutes to hours -> 8h cut off
+df_cardia_15 <- df_cardia_15 %>%
+  mutate(
+    fasting_8h = case_when(
+      !is.na(fasting_minutes) & fasting_minutes >= 480 ~ 1,   #  8 hours (480 min)
+      !is.na(fasting_minutes) & fasting_minutes < 480 ~ 0,    # < 8 hours
+      TRUE ~ NA_real_
+    )
+  )
+
+df_cardia_20 <- df_cardia_20 %>%
+  mutate(
+    fasting_8h = case_when(
+      !is.na(fasting_minutes) & fasting_minutes >= 480 ~ 1,   #  8 hours (480 min)
+      !is.na(fasting_minutes) & fasting_minutes < 480 ~ 0,    # < 8 hours
+      TRUE ~ NA_real_
+    )
+  )
+
+# Cleaning fasting glucose: 
+df_cardia_10 <- df_cardia_10 %>%
+  mutate(
+    fglu = case_when(
+      fasting_8h == 0 ~ NA_real_,     # NA increased: 1189 -> 1268
+      TRUE ~ fglu
+    )
+  )
+
+
+df_cardia_15 <- df_cardia_15 %>%
+  mutate(
+    fglu = case_when(
+      fasting_12h == 0 ~ NA_real_,    # NA increased: 1409 -> 1672
+      TRUE ~ fglu
+    )
+  )
+
+
+df_cardia_20 <- df_cardia_20 %>%
+  mutate(
+    fglu = case_when(
+      fasting_12h == 0 ~ NA_real_,     # NA increased: 58 -> 280
+      TRUE ~ fglu
+    )
+  )
+
+
+# Diabetes: Self reported / labs (fasting glucose, HbA1c, oral glucose tolerance test)
+create_self_lab_dm <- function(dm) {
+  dm %>%
+    mutate(
+      self_lab_dm = case_when(
+        self_db == 1 | fglu >= 126 | hba1c >= 6.5 | pogtt >= 200 ~ 1,
+        !is.na(self_db) | !is.na(fglu) | !is.na(hba1c) | !is.na(pogtt) ~ 0,
+        is.na(self_db) & is.na(fglu) & is.na(hba1c) & is.na(pogtt) ~ NA_real_
+      )
+    )
+}
+
+df_cardia_00 <- create_self_lab_dm(df_cardia_00)
+df_cardia_10 <- create_self_lab_dm(df_cardia_10)
+df_cardia_15 <- create_self_lab_dm(df_cardia_15)
+df_cardia_20 <- create_self_lab_dm(df_cardia_20)
+
+```
+
+
+# Labeling both datasets
+
+```{r labeling, echo=TRUE, warning=FALSE, message=FALSE}
+label_cardia <- function(label) {
+  label %>%
+    mutate(
+      # Sex
+      sex = factor(sex,
+                   levels = c(1, 2),
+                   labels = c("Men", "Women")),
+
+      # TB variables
+      tb_history = factor(tb_history,
+                          levels = c(1, 0, 9),
+                          labels = c("Yes", "No", "Refused/DK")),
+      tb_treatment = factor(tb_treatment,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      tb_skin_test = factor(tb_skin_test,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      tb_skin_test_result = factor(tb_skin_test_result,
+                                   levels = c(1, 0, 9),
+                                   labels = c("Positive", "Negative", "Refused/DK")),
+      tb_medication_use = factor(tb_medication_use,
+                                 levels = c(1, 0, 9),
+                                 labels = c("Yes", "No", "Refused/DK")),
+
+      # Diabetes self-report + labs
+      self_db = factor(self_db,
+                       levels = c(1, 0, 9),
+                       labels = c("Yes", "No", "Refused/DK")),
+      drug_insu_db = factor(drug_insu_db,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      drug_pill_db = factor(drug_pill_db,
+                            levels = c(1, 0, 9),
+                            labels = c("Yes", "No", "Refused/DK")),
+      self_lab_dm = factor(self_lab_dm,
+                           levels = c(1, 0),
+                           labels = c("Diabetes", "No Diabetes")),
+
+      # Family history
+      family_hx_db = factor(family_hx_db,
+                            levels = c(1, 0),
+                            labels = c("Yes", "No")),
+
+      # Race/Ethnicity
+      race = factor(race,
+                    levels = c(0, 1, 2, 3, 9),
+                    labels = c("Non-Hispanic Black", 
+                               "Non-Hispanic White", 
+                               "Mexican/Other Hispanic", 
+                               "Other/Multiracial", 
+                               "Missing")),
+      ethnicity = factor(ethnicity,
+                         levels = c(1, 2, 9),
+                         labels = c("Non-Hispanic", "Hispanic", "Missing")),
+
+      # Education
+      edu_adult = factor(edu_adult,
+                         levels = c(1, 2, 3, 4, 9),
+                         labels = c("< High School", 
+                                    "High School Grad", 
+                                    "Some College/AA", 
+                                    "College+", 
+                                    "Refused/DK"))
+    )
+}
+
+df_cardia_00 <- label_cardia(df_cardia_00)
+df_cardia_10 <- label_cardia(df_cardia_10)
+df_cardia_15 <- label_cardia(df_cardia_15)
+df_cardia_20 <- label_cardia(df_cardia_20)
+
+```
+
+# Exploratory data analysis
+
+```{r exploratory data analysis, ECHO = FALSE, message=FALSE, results='hide'}
+
+###==== Year 00 =====
+#TB (n=0)
+table(df_cardia_00$tb_history)
+
+#DM 
+table(df_cardia_00$self_db) #(n=42)
+table(df_cardia_00$self_lab_dm) #(n=55)
+
+#DM and TB (n=0)
+table(df_cardia_00$tb_history, df_cardia_00$self_db)
+table(df_cardia_00$tb_history, df_cardia_00$self_lab_dm)
+
+###==== Year 10 =====
+#TB (n=80)
+table(df_cardia_10$tb_history)
+
+#DM 
+table(df_cardia_10$self_db) # (n=156)
+table(df_cardia_10$self_lab_dm) #(n=187)
+
+#DM and TB 
+table(df_cardia_10$tb_history, df_cardia_10$self_db) # (n=4) 
+table(df_cardia_10$tb_history, df_cardia_10$self_lab_dm) # (n=4) 
+
+###==== Year 15 =====
+#TB (n=112)
+table(df_cardia_15$tb_history)
+
+#DM 
+table(df_cardia_15$self_db) # (n=190)
+table(df_cardia_15$self_lab_dm) #(n=213)
+
+
+#DM and TB 
+table(df_cardia_15$tb_history, df_cardia_15$self_db) # (n=2) 
+table(df_cardia_15$tb_history, df_cardia_15$self_lab_dm) # (n=2)
+
+###==== Year 20 =====
+#TB (n=125)
+table(df_cardia_20$tb_history)
+
+#DM 
+table(df_cardia_20$self_db) # (n=248)
+table(df_cardia_20$self_lab_dm) #(n=328)
+
+
+#DM and TB 
+table(df_cardia_20$tb_history, df_cardia_20$self_db) # (n=12)
+table(df_cardia_20$tb_history, df_cardia_20$self_lab_dm) # (n=17)
+
+```
+
+
+# New DM and TB variable
+
+```{r dm_tb, , echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+# For CARDIA Y00
+df_cardia_00 <- df_cardia_00 %>%
+  mutate(
+    tb_dm = case_when(
+      self_lab_dm == "Diabetes" & tb_history == "Yes" ~ 1,  # both DM and TB
+      TRUE ~ 0                                               # everything else
+    )
+  )
+
+# For CARDIA Y10
+df_cardia_10 <- df_cardia_10 %>%
+  mutate(
+    tb_dm = case_when(
+      self_lab_dm == "Diabetes" & tb_history == "Yes" ~ 1,
+      TRUE ~ 0
+    )
+  )
+
+# For CARDIA Y15
+df_cardia_15 <- df_cardia_15 %>%
+  mutate(
+    tb_dm = case_when(
+      self_lab_dm == "Diabetes" & tb_history == "Yes" ~ 1,
+      TRUE ~ 0
+    )
+  )
+
+# For CARDIA Y20
+df_cardia_20 <- df_cardia_20 %>%
+  mutate(
+    tb_dm = case_when(
+      self_lab_dm == "Diabetes" & tb_history == "Yes" ~ 1,
+      TRUE ~ 0
+    )
+  )
+
+
+# Labeling both datasets
+label_tb_dm <- function(tb_dm) {
+  tb_dm %>%
+    mutate(
+      # diabetes & tuberculosis
+      tb_dm = factor(tb_dm,
+                   levels = c(0, 1),
+                   labels = c("No", "Yes"))
+    )
+}
+
+df_cardia_00 <- label_tb_dm(df_cardia_00)
+df_cardia_10 <- label_tb_dm(df_cardia_10)
+df_cardia_15 <- label_tb_dm(df_cardia_15)
+df_cardia_20 <- label_tb_dm(df_cardia_20)
+
+#Checking
+table(df_cardia_00$tb_dm)
+table(df_cardia_10$tb_dm)
+table(df_cardia_15$tb_dm)
+table(df_cardia_20$tb_dm)
+
+
+```
+
+
+
+# Preliminary results: 
+
+## CARDIA Y00
+
+```{r, labeling-variables-data, echo=FALSE, include=FALSE}
+library(labelled)
+
+# Create a named list of variable labels
+cardia_var_labels <- list(
+  age = "Age",                        
+  sex = "Sex",
+  race = "Race",
+  ethnicity = "Ethnicity",
+  edu_adult = "Education Level",
+  self_db = "Self-reported diabetes",
+  age_told_db = "Age told DM",
+  drug_insu_db = "Diabetes Mellitus on insulin",
+  drug_pill_db = "Diabetes Mellitus on Oral med",
+  self_lab_dm = "DM self-reported and by lab def",
+  family_hx_db = "Family history of DM",
+  tb_history = "TB History ever",
+  age_told_tb  = "Age told TB",
+  tb_treatment = "TB treatment ever",
+  tb_skin_test = "TB skin test ever",
+  tb_skin_test_result = "TB skin test POSITIVE ever",
+  tb_medication_use = "TB medication use ever",
+  tb_dm = "TB & DM",
+  fasting_minutes = "Fasting (minutes)",
+  fasting_hours = "Fasting (hours)",
+  fasting_8h = "8h fasting",
+  fasting_12h = "12h fasting",
+  fglu = "Fasting Glucose (mg/dl)",
+  hba1c = "HbA1c (%)",
+  pogtt = "Oral Glucose Tolerance test (OGTT, mg/dl)",
+  insulin = "insulin",
+  creatinine_urine = "Creatinine in urine",
+  total_cholesterol = "Total cholesterol (mg/dL)",
+  ldl = "LDL (mg/dL)",
+  weight = "Weight (lbs)",
+  height = "Height (cm)",
+  bmi = "BMI (kg/m2)",
+  waist = "Waist (cm)",
+  hip = "Hip (cm)",
+  blood_pressure_sys = "Systolic blood pressure (mmHg)",
+  blood_pressure_diast = "Diastolic blood pressure (mmHg)"
+)
+
+# Apply labels to both datasets
+var_label(df_cardia_00) <- cardia_var_labels
+var_label(df_cardia_10) <- cardia_var_labels
+var_label(df_cardia_15) <- cardia_var_labels
+var_label(df_cardia_20) <- cardia_var_labels
+
+```
+
+
+```{r, CARDIA TABLE (Y10), message=FALSE, echo=TRUE}
+library(gtsummary)
+
+# Select the variables you want to include
+vars_to_summarize <- c(
+  "age", "sex", "race", "edu_adult", "self_db", "age_told_db", "drug_insu_db", "drug_pill_db",
+  "self_lab_dm", "family_hx_db",
+  "tb_history", "age_told_tb", "tb_treatment", "fasting_minutes", "fglu", "hba1c", "total_cholesterol", "ldl", "weight", "height", "bmi",  "waist", "hip", "blood_pressure_sys", "blood_pressure_diast", "tb_dm")
+
+# Create table1
+CARDIA_Y10_table <- df_cardia_10 %>%
+  select(all_of(vars_to_summarize), tb_dm) %>%  # include the grouping variable
+  tbl_summary(
+    by = tb_dm,  # group by TB+DM
+    type = list(
+      age ~ "continuous",
+      age_told_db ~ "continuous",
+      age_told_tb ~ "continuous",
+      fglu ~ "continuous",
+      hba1c ~ "continuous",
+      fasting_minutes ~ "continuous",
+      total_cholesterol ~ "continuous",
+      ldl ~ "continuous",
+      weight ~ "continuous",
+      height ~ "continuous",
+      bmi ~ "continuous",
+      waist ~ "continuous",
+      hip ~ "continuous",
+      blood_pressure_sys ~ "continuous",
+      blood_pressure_diast ~ "continuous"
+    ),
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    label = var_label(df_cardia_10),
+    missing = "no"
+  ) 
+
+CARDIA_Y10_table <- CARDIA_Y10_table %>%
+  modify_header(label ~ "**Variables**") %>%
+  modify_spanning_header(c(stat_1, stat_2) ~ "**Summary Statistics (CARDIA Y10)**")
+
+CARDIA_Y10_table
+
+```
+
+# Preliminary results: 
+
+## CARDIA Y15
+
+```{r CARDIA recoding (Y15), echo=TRUE, warning=FALSE, message=FALSE}
+
+# checking 
+table(df_cardia_15$tb_dm) # n=2 
+
+# Due to inconsistency recording in the following participants in CARDIA studies, we are recording the following participants tb_dm as 'yes':
+# 20575960
+# 58702204
+# 64049714
+
+# Review inconsistencies
+df_cardia_15 %>%
+  filter(id %in% c(
+    20575960, 
+    58702204, 
+    69644001
+  )) %>%
+  select(
+    id,
+    id_study,
+    tb_history,
+    self_db,
+    self_lab_dm,
+    tb_dm
+  ) %>%
+  arrange(id, id_study)
+
+# Recode
+df_cardia_15 <- df_cardia_15 %>%
+  mutate(
+    # ID 20575960
+    tb_history = if_else(
+      id == 20575960,
+      "Yes",
+      tb_history
+    ),
+    
+    tb_dm = if_else(
+      id == 20575960,
+      "Yes",
+      tb_dm
+    ),
+    
+    # ID 58702204
+    self_db = if_else(
+      id == 58702204,
+      "Yes",
+      self_db
+    ),
+    
+    tb_dm = if_else(
+      id == 58702204,
+      "Yes",
+      tb_dm
+    ),
+    
+    # ID 69644001
+    tb_history = if_else(
+      id == 69644001,
+      "Yes",
+      tb_history
+    ),
+    
+    self_db = if_else(
+      id == 69644001,
+      "Yes",
+      self_db
+    ),
+    
+    tb_dm = if_else(
+      id == 69644001,
+      "Yes",
+      tb_dm
+    )
+  )
+
+# Verify
+df_cardia_15 %>%
+  filter(id %in% c(20575960, 58702204, 69644001)) %>%
+  select(
+    id,
+    id_study,
+    tb_history,
+    self_db,
+    self_lab_dm,
+    tb_dm
+  )
+
+# checking 
+table(df_cardia_15$tb_dm) # n=2 => 5
+
+
+# re assigning labels
+var_label(df_cardia_15) <- cardia_var_labels
+```
+
+```{r CARDIA TABLE (Y15), warning=FALSE, message=FALSE, echo=TRUE}
+
+library(gtsummary)
+
+CARDIA_Y15_table <- df_cardia_15 %>%
+  select(all_of(vars_to_summarize), tb_dm) %>%  # include the grouping variable
+  tbl_summary(
+    by = tb_dm,  # group by TB+DM
+    type = list(
+      age ~ "continuous",
+      age_told_db ~ "continuous",
+      age_told_tb ~ "continuous",
+      fglu ~ "continuous",
+      hba1c ~ "continuous",
+      fasting_minutes ~ "continuous",
+      total_cholesterol ~ "continuous",
+      ldl ~ "continuous",
+      weight ~ "continuous",
+      height ~ "continuous",
+      bmi ~ "continuous",
+      waist ~ "continuous",
+      hip ~ "continuous",
+      blood_pressure_sys ~ "continuous",
+      blood_pressure_diast ~ "continuous"
+    ),
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    label = var_label(df_cardia_15)[vars_to_summarize],
+    missing = "no"
+  ) 
+
+CARDIA_Y15_table <- CARDIA_Y15_table %>%
+  modify_header(label ~ "**Variables**") %>%
+  modify_spanning_header(c(stat_1, stat_2) ~ "**Summary Statistics (CARDIA Y15)**")
+
+CARDIA_Y15_table
+
+```
+
+
+# Preliminary results: 
+
+## CARDIA Y20
+
+```{r CARDIA recoding (Y20), echo=TRUE, warning=FALSE, message=FALSE}
+
+# checking 
+table(df_cardia_20$tb_dm) # n=17 
+
+# Due to inconsistency recording in the following participants in CARDIA studies, we are recording the following participants tb_dm as 'yes':
+# 58702204
+# 64049714
+
+# Review inconsistencies
+df_cardia_20 %>%
+  filter(id %in% c(
+    58702204, 
+    64049714
+  )) %>%
+  select(
+    id,
+    id_study,
+    tb_history,
+    self_db,
+    self_lab_dm,
+    tb_dm
+  ) %>%
+  arrange(id, id_study)
+
+# Recode
+df_cardia_20 <- df_cardia_20 %>%
+  mutate(
+    # ID 58702204
+    tb_history = if_else(
+      id == 58702204,
+      "Yes",
+      tb_history
+    ),
+      self_db = if_else(
+      id == 58702204,
+      "Yes",
+      self_db
+    ),
+    
+    tb_dm = if_else(
+      id == 58702204,
+      "Yes",
+      tb_dm
+    ),
+    
+    # ID 64049714
+    tb_history = if_else(
+      id == 64049714,
+      "Yes",
+      tb_history
+    ),
+    
+    tb_dm = if_else(
+      id == 64049714,
+      "Yes",
+      tb_dm
+    )
+  )
+
+# Verify
+df_cardia_20 %>%
+  filter(id %in% c(58702204, 64049714)) %>%
+  select(
+    id,
+    id_study,
+    tb_history,
+    self_db,
+    self_lab_dm,
+    tb_dm
+  )
+
+# checking 
+table(df_cardia_20$tb_dm) # n=17 => 19
+
+
+# re assigning labels
+var_label(df_cardia_20) <- cardia_var_labels
+```
+
+```{r CARDIA TABLE (Y20) 1, warning=FALSE, message=FALSE, echo=TRUE}
+library(gtsummary)
+
+CARDIA_Y20_table <- df_cardia_20 %>%
+  select(all_of(vars_to_summarize), tb_dm) %>%  # include the grouping variable
+  tbl_summary(
+    by = tb_dm,  # group by TB+DM
+    type = list(
+      age ~ "continuous",
+      age_told_db ~ "continuous",
+      age_told_tb ~ "continuous",
+      fglu ~ "continuous",
+      hba1c ~ "continuous",
+      fasting_minutes ~ "continuous",
+      total_cholesterol ~ "continuous",
+      ldl ~ "continuous",
+      weight ~ "continuous",
+      height ~ "continuous",
+      bmi ~ "continuous",
+      waist ~ "continuous",
+      hip ~ "continuous",
+      blood_pressure_sys ~ "continuous",
+      blood_pressure_diast ~ "continuous"
+    ),
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    label = var_label(df_cardia_15),
+    missing = "no"
+  ) 
+
+CARDIA_Y20_table <- CARDIA_Y20_table %>%
+  modify_header(label ~ "**Variables**") %>%
+  modify_spanning_header(c(stat_1, stat_2) ~ "**Summary Statistics (CARDIA Y20)**")
+
+
+CARDIA_Y20_table
+
+```
+
+## CARDIA Y20 - manuscript
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+# checking 
+table(df_cardia_20$tb_dm) # n=19
+
+# "Clean" dataset
+df_cardia_20 <- df_cardia_20 %>%
+  filter(tb_dm == "Yes")          # n=19
+```
+
+```{r CARDIA TABLE (Y20) 2, warning=FALSE, message=FALSE, echo=TRUE}
+library(gtsummary)
+
+CARDIA_Y20_table_manuscript <- df_cardia_20 %>%
+  select(all_of(vars_to_summarize)) %>%   # remove tb_dm from the selection
+  tbl_summary(
+    type = list(
+      age ~ "continuous",
+      age_told_db ~ "continuous",
+      age_told_tb ~ "continuous",
+      fglu ~ "continuous",
+      hba1c ~ "continuous",
+      fasting_minutes ~ "continuous",
+      total_cholesterol ~ "continuous",
+      ldl ~ "continuous",
+      weight ~ "continuous",
+      height ~ "continuous",
+      bmi ~ "continuous",
+      waist ~ "continuous",
+      hip ~ "continuous",
+      blood_pressure_sys ~ "continuous",
+      blood_pressure_diast ~ "continuous"
+    ),
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} / {N} ({p}%)"
+    ),
+    label = var_label(df_cardia_20),
+    missing = "no"
+  ) %>%
+  modify_header(label ~ "**Variables**") %>%
+  modify_spanning_header(everything() ~ "**Summary Statistics (CARDIA Y20)**")
+
+
+CARDIA_Y20_table_manuscript
+
+```
+
+
+
